@@ -5,24 +5,24 @@ services:
     build: .
     container_name: auth-service
     ports:
-      - "8080:8080"
+      - "${APP_PORT}:${APP_PORT}"
     environment:
-      - DB_HOST=postgres
-      - DB_PORT=5432
-      - DB_USER=postgres
-      - DB_PASSWORD=postgres
-      - DB_NAME=auth_service
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=${DB_NAME}
+      - APP_PORT=${APP_PORT}
     depends_on:
       - postgres
-    command: [ "sh", "-c", "migrate -path /app/db/migrations -database postgres://postgres:postgres@postgres:5432/auth_service?sslmode=disable up && /auth-service" ]
 
   postgres:
     image: postgres:13
     container_name: postgres
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: auth_service
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:

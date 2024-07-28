@@ -13,6 +13,6 @@ RUN go build -o /auth-service
 RUN apk add --no-cache bash
 RUN wget -qO- https://github.com/golang-migrate/migrate/releases/download/v4.15.2/migrate.linux-amd64.tar.gz | tar xvz -C /usr/local/bin
 
-EXPOSE 8080
+EXPOSE ${APP_PORT}
 
 CMD ["/auth-service"]
