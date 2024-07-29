@@ -2,8 +2,13 @@ package models
 
 import (
 	"errors"
+	"github.com/dgrijalva/jwt-go"
+	"github.com/vantutran2k1/social-network-auth/utils"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
+	"os"
+	"strconv"
+	"time"
 )
 
 type User struct {
@@ -40,4 +45,21 @@ func (user *User) Authenticate(db *gorm.DB, password string) bool {
 
 	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
 	return err == nil
+}
+
+func (user *User) GenerateToken() (string, time.Time, error) {
+	expirationAfter, err := strconv.Atoi(os.Getenv("JWT_EXPIRATION_MINUTES"))
+	if err != nil {
+		return "", time.Time{}, err
+	}
+
+	expirationTime := time.Now().Add(time.Duration(expirationAfter) * time.Minute)
+	claims := &utils.Claims{
+		Username:       user.Username,
+		StandardClaims: jwt.StandardClaims{ExpiresAt: expirationTime.Unix()},
+	}
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	tokenString, err := token.SignedString(utils.JwtKey)
+
+	return tokenString, expirationTime, err
 }
