@@ -6,7 +6,7 @@ import (
 )
 
 type Token struct {
-	gorm.Model
+	ID        uint      `gorm:"primarykey"`
 	UserId    int       `json:"user_id" gorm:"not null"`
 	Token     string    `json:"token" gorm:"not null"`
 	IssuedAt  time.Time `json:"issued_at" gorm:"not null"`

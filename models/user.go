@@ -4,16 +4,13 @@ import (
 	"errors"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
-	"time"
 )
 
 type User struct {
 	gorm.Model
-	Username  string    `json:"username" gorm:"unique, not null"`
-	Password  string    `json:"-"`
-	Email     string    `json:"email" gorm:"unique, not null"`
-	CreatedAt time.Time `json:"created_at" gorm:"not null"`
-	UpdatedAt time.Time `json:"updated_at" gorm:"not null"`
+	Username string `json:"username" gorm:"unique" binding:"required"`
+	Password string `json:"-" binding:"required"`
+	Email    string `json:"email" gorm:"unique" binding:"required"`
 }
 
 func (user *User) Register(db *gorm.DB) error {
