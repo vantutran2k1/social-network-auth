@@ -16,7 +16,7 @@ migrate:
 
 # Start the application
 run:
-	docker-compose up auth-service
+	docker-compose up -d auth-service --build
 
 # Stop all containers
 stop:
