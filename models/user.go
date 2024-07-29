@@ -19,31 +19,28 @@ type User struct {
 }
 
 func (user *User) Register(db *gorm.DB) error {
-	err := db.Where("username = ?", user.Username).First(&User{}).Error
-	if err == nil {
+	dbUser := User{}
+	db.Where("username = ?", user.Username).First(&dbUser)
+	if dbUser.ID != 0 {
 		return errors.New("username already exists")
 	}
 
-	if errors.Is(err, gorm.ErrRecordNotFound) {
-		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
-		if err != nil {
-			return err
-		}
-
-		user.Password = string(hashedPassword)
-		return db.Create(&user).Error
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
+	if err != nil {
+		return err
 	}
 
-	return err
+	user.Password = string(hashedPassword)
+	return db.Create(&user).Error
 }
 
 func (user *User) Authenticate(db *gorm.DB, password string) bool {
-	err := db.Where("username = ?", user.Username).First(&user).Error
-	if err != nil {
+	db.Where("username = ?", user.Username).First(&user)
+	if user.ID == 0 {
 		return false
 	}
 
-	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
+	err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
 	return err == nil
 }
 

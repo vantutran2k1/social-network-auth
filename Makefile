@@ -8,7 +8,7 @@ export $(shell sed 's/=.*//' .env)
 
 # Start PostgreSQL container
 up:
-	docker-compose up -d postgres
+	docker compose up -d postgres
 
 # Run migrations
 migrate:
@@ -16,8 +16,8 @@ migrate:
 
 # Start the application
 run:
-	docker-compose up -d auth-service --build
+	docker compose up -d auth-service --build
 
 # Stop all containers
 stop:
-	docker-compose down
+	docker compose down

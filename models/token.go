@@ -20,8 +20,8 @@ func (token *Token) Save(db *gorm.DB) error {
 
 func (token *Token) Validate(db *gorm.DB, tokenString string) bool {
 	dbToken := Token{}
-	err := db.Where("token = ?", tokenString).First(&dbToken).Error
-	if err != nil {
+	db.Where("token = ?", tokenString).First(&dbToken)
+	if dbToken.ID == 0 {
 		return false
 	}
 
@@ -30,12 +30,9 @@ func (token *Token) Validate(db *gorm.DB, tokenString string) bool {
 
 func (token *Token) Revoke(db *gorm.DB, tokenString string) error {
 	dbToken := Token{}
-	err := db.Where("token = ?", tokenString).First(&dbToken).Error
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return errors.New("token not found")
-		}
-		return err
+	db.Where("token = ?", tokenString).First(&dbToken)
+	if dbToken.ID == 0 {
+		return errors.New("token not found")
 	}
 
 	if !dbToken.ExpiresAt.After(time.Now().UTC()) {
