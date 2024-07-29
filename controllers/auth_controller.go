@@ -68,7 +68,7 @@ func Login(c *gin.Context) {
 	token := models.Token{
 		UserId:    user.ID,
 		Token:     tokenString,
-		IssuedAt:  time.Now(),
+		IssuedAt:  time.Now().UTC(),
 		ExpiresAt: expirationTime,
 	}
 	err = token.Save(config.DB)
@@ -78,4 +78,27 @@ func Login(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"data": tokenString})
+}
+
+func Validate(c *gin.Context) {
+	tokenString := c.Request.Header.Get("Authorization")
+	token := models.Token{}
+	if !token.Validate(config.DB, tokenString) {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid or expired token"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "token is valid"})
+}
+
+func Logout(c *gin.Context) {
+	tokenString := c.Request.Header.Get("Authorization")
+	token := models.Token{}
+	err := token.Revoke(config.DB, tokenString)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "token revoked successfully"})
 }
