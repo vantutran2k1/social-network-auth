@@ -52,7 +52,7 @@ func (user *User) GenerateToken() (string, time.Time, error) {
 
 	expirationTime := time.Now().UTC().Add(time.Duration(expirationAfter) * time.Minute)
 	claims := &utils.Claims{
-		Username:       user.Username,
+		UserID:         user.ID,
 		StandardClaims: jwt.StandardClaims{ExpiresAt: expirationTime.Unix()},
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)

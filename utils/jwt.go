@@ -8,6 +8,6 @@ import (
 var JwtKey = []byte(os.Getenv("JWT_KEY"))
 
 type Claims struct {
-	Username string `json:"username"`
+	UserID uint `json:"user_id"`
 	jwt.StandardClaims
 }

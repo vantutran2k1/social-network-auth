@@ -67,7 +67,7 @@ func Login(c *gin.Context) {
 	}
 
 	token := models.Token{
-		UserId:    user.ID,
+		UserID:    user.ID,
 		Token:     tokenString,
 		IssuedAt:  time.Now().UTC(),
 		ExpiresAt: expirationTime,

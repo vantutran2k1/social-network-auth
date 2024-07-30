@@ -23,20 +23,18 @@ func AuthMiddleware() gin.HandlerFunc {
 		})
 
 		if err != nil || !token.Valid {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid token"})
-			c.Abort()
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "invalid token"})
 			return
 		}
 
 		var dbToken models.Token
 		config.DB.Where("token = ?", tokenString).First(&dbToken)
 		if dbToken.Token == "" {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "token not found"})
-			c.Abort()
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "token not found"})
 			return
 		}
 
-		c.Set("username", claims.Username)
+		c.Set("user_id", claims.UserID)
 		c.Next()
 	}
 }
