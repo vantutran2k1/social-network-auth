@@ -4,11 +4,15 @@
 include .env
 export $(shell sed 's/=.*//' .env)
 
-.PHONY: up migrate run stop
+.PHONY: up create_migration migrate run stop
 
 # Start PostgreSQL container
 up:
 	docker compose up -d postgres
+
+# Create migration
+create_migration:
+	migrate create -ext sql -dir db/migrations -seq $(MIGRATION_NAME)
 
 # Run migrations
 migrate:

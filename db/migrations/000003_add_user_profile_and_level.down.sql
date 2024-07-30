@@ -1,0 +1,6 @@
+DROP TABLE IF EXISTS profiles;
+
+DROP TABLE IF EXISTS levels;
+
+DROP TABLE IF EXISTS user_levels;
+
