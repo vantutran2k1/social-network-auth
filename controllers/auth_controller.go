@@ -4,14 +4,15 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/vantutran2k1/social-network-auth/config"
 	"github.com/vantutran2k1/social-network-auth/models"
+	"github.com/vantutran2k1/social-network-auth/utils"
 	"net/http"
 	"time"
 )
 
 type UserRegistrationRequest struct {
 	Username string `json:"username" binding:"required"`
-	Password string `json:"password" binding:"required"`
-	Email    string `json:"email" binding:"required"`
+	Password string `json:"password" binding:"required,min=8,max=32"`
+	Email    string `json:"email" binding:"required,email"`
 }
 
 type UserAuthenticationRequest struct {
@@ -21,9 +22,9 @@ type UserAuthenticationRequest struct {
 
 func Register(c *gin.Context) {
 	var creds UserRegistrationRequest
-	err := c.ShouldBindJSON(&creds)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	errs := utils.BindAndValidate(c, &creds)
+	if errs != nil && len(errs) > 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": errs})
 		return
 	}
 
@@ -32,7 +33,7 @@ func Register(c *gin.Context) {
 		Password: creds.Password,
 		Email:    creds.Email,
 	}
-	err = user.Register(config.DB)
+	err := user.Register(config.DB)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -47,9 +48,9 @@ func Register(c *gin.Context) {
 
 func Login(c *gin.Context) {
 	var auth UserAuthenticationRequest
-	err := c.ShouldBindJSON(&auth)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	errs := utils.BindAndValidate(c, &auth)
+	if errs != nil && len(errs) > 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": errs})
 		return
 	}
 

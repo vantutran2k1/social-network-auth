@@ -19,10 +19,10 @@ type User struct {
 }
 
 func (user *User) Register(db *gorm.DB) error {
-	dbUser := User{}
-	db.Where("username = ?", user.Username).First(&dbUser)
+	var dbUser User
+	db.Where("username = ? OR email = ?", user.Username, user.Email).First(&dbUser)
 	if dbUser.ID != 0 {
-		return errors.New("username already exists")
+		return errors.New("username or email already exists")
 	}
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
