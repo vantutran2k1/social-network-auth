@@ -44,10 +44,10 @@ func (user *User) Authenticate(db *gorm.DB, password string) bool {
 	return err == nil
 }
 
-func (user *User) GenerateToken() (string, time.Time, error) {
+func (user *User) GenerateToken(db *gorm.DB) (string, error) {
 	expirationAfter, err := strconv.Atoi(os.Getenv("JWT_EXPIRATION_MINUTES"))
 	if err != nil {
-		return "", time.Time{}, err
+		return "", err
 	}
 
 	expirationTime := time.Now().UTC().Add(time.Duration(expirationAfter) * time.Minute)
@@ -55,8 +55,19 @@ func (user *User) GenerateToken() (string, time.Time, error) {
 		UserID:         user.ID,
 		StandardClaims: jwt.StandardClaims{ExpiresAt: expirationTime.Unix()},
 	}
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	tokenString, err := token.SignedString(utils.JwtKey)
+	tokenJwt := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	tokenString, err := tokenJwt.SignedString(utils.JwtKey)
 
-	return tokenString, expirationTime, err
+	token := Token{
+		UserID:    user.ID,
+		Token:     tokenString,
+		IssuedAt:  time.Now().UTC(),
+		ExpiresAt: expirationTime,
+	}
+	err = token.Save(db)
+	if err != nil {
+		return "", err
+	}
+
+	return tokenString, nil
 }

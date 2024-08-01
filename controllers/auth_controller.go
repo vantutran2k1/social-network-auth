@@ -6,7 +6,6 @@ import (
 	"github.com/vantutran2k1/social-network-auth/models"
 	"github.com/vantutran2k1/social-network-auth/utils"
 	"net/http"
-	"time"
 )
 
 type UserRegistrationRequest struct {
@@ -60,19 +59,7 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	tokenString, expirationTime, err := user.GenerateToken()
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	token := models.Token{
-		UserID:    user.ID,
-		Token:     tokenString,
-		IssuedAt:  time.Now().UTC(),
-		ExpiresAt: expirationTime,
-	}
-	err = token.Save(config.DB)
+	tokenString, err := user.GenerateToken(config.DB)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
