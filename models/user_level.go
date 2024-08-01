@@ -7,3 +7,7 @@ type UserLevel struct {
 	UserID  uint `json:"user_id" gorm:"not null"`
 	LevelID uint `json:"level_id" gorm:"not null"`
 }
+
+func (ul *UserLevel) Save(db *gorm.DB) error {
+	return db.Create(&ul).Error
+}

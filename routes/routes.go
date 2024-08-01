@@ -14,5 +14,7 @@ func SetupRouter() *gin.Engine {
 	router.POST("/api/auth/logout", middlewares.AuthMiddleware(), controllers.Logout)
 	router.POST("/api/auth/validate", middlewares.AuthMiddleware(), controllers.Validate)
 
+	router.GET("/api/levels", controllers.GetLevels)
+
 	return router
 }
