@@ -10,29 +10,27 @@ import (
 
 type AssignLevelRequest struct {
 	UserId    uint   `json:"user_id" binding:"required"`
-	LevelName string `json:"level_name" binding:"required"`
-}
-
-func GetLevels(c *gin.Context) {
-	level := models.Level{}
-	levels, err := level.GetLevels(config.DB)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err})
-	}
-
-	c.JSON(http.StatusOK, map[string]any{"data": levels})
+	LevelName string `json:"level_name" binding:"required,oneof=BRONZE SILVER GOLD"`
 }
 
 func AssignLevelToUser(c *gin.Context) {
-	var request *AssignLevelRequest
+	var request AssignLevelRequest
 	errs := utils.BindAndValidate(c, &request)
 	if errs != nil && len(errs) > 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": errs})
+		c.JSON(http.StatusBadRequest, gin.H{"errors": errs})
+		return
 	}
 
 	user := models.User{ID: request.UserId}
 	err := user.AssignLevel(config.DB, request.LevelName)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err})
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
 	}
+
+	data := map[string]any{
+		"user_id": user.ID,
+		"level":   request.LevelName,
+	}
+	c.JSON(http.StatusOK, gin.H{"data": data})
 }

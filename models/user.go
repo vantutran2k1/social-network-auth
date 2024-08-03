@@ -16,7 +16,7 @@ type User struct {
 	Username  string    `json:"username" gorm:"unique" binding:"required"`
 	Password  string    `json:"-" binding:"required"`
 	Email     string    `json:"email" gorm:"unique" binding:"required"`
-	Level     LevelName `json:"level" binding:"required"`
+	Level     Level     `json:"level" binding:"required"`
 	CreatedAt time.Time `json:"created_at" binding:"required"`
 	UpdatedAt time.Time `json:"updated_at" binding:"required"`
 	DeletedAt gorm.DeletedAt
@@ -96,26 +96,11 @@ func (user *User) AssignLevel(db *gorm.DB, levelName string) error {
 		return err
 	}
 
-	var level *Level
-	err = db.Where(&Level{}).First(&level).Error
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return errors.New("level not found")
-		}
-		return err
+	level := GetLevelFromName(levelName)
+	if dbUser.Level == level {
+		return nil
 	}
+	dbUser.Level = level
 
-	userLevel := UserLevel{
-		UserID:  user.ID,
-		LevelID: level.ID,
-	}
-	ul, err := userLevel.Get(db)
-	if err != nil {
-		return err
-	}
-	if ul.ID != 0 {
-		return errors.New("level is already assigned")
-	}
-
-	return ul.Save(db)
+	return db.Save(dbUser).Error
 }

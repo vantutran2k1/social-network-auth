@@ -23,7 +23,7 @@ func Register(c *gin.Context) {
 	var creds UserRegistrationRequest
 	errs := utils.BindAndValidate(c, &creds)
 	if errs != nil && len(errs) > 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": errs})
+		c.JSON(http.StatusBadRequest, gin.H{"errors": errs})
 		return
 	}
 
@@ -49,7 +49,7 @@ func Login(c *gin.Context) {
 	var auth UserAuthenticationRequest
 	errs := utils.BindAndValidate(c, &auth)
 	if errs != nil && len(errs) > 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": errs})
+		c.JSON(http.StatusBadRequest, gin.H{"errors": errs})
 		return
 	}
 

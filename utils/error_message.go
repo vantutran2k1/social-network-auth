@@ -5,6 +5,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 	"reflect"
+	"strings"
 )
 
 type ErrorMessage struct {
@@ -66,6 +67,8 @@ func getErrorMsg(fe validator.FieldError) string {
 		return "Should be not equal to " + fe.Param()
 	case "email":
 		return "Should be a valid email address"
+	case "oneof":
+		return "Should be one of " + strings.Join(strings.Split(fe.Param(), " "), ", ")
 	}
 	return "Unknown error"
 }

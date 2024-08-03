@@ -1,33 +1,23 @@
 package models
 
-import (
-	"gorm.io/gorm"
-)
-
-type LevelName string
+type Level string
 
 const (
-	BRONZE LevelName = "BRONZE"
-	SILVER LevelName = "SILVER"
-	GOLD   LevelName = "GOLD"
+	BRONZE  Level = "BRONZE"
+	SILVER  Level = "SILVER"
+	GOLD    Level = "GOLD"
+	UNKNOWN Level = ""
 )
 
-type Level struct {
-	gorm.Model
-	LevelName LevelName `json:"level_name" gorm:"not null;unique"`
-}
-
-func (l *Level) GetLevels(db *gorm.DB) ([]string, error) {
-	var levels []Level
-	err := db.Find(&levels).Error
-	if err != nil {
-		return nil, err
+func GetLevelFromName(name string) Level {
+	switch name {
+	case "BRONZE":
+		return BRONZE
+	case "SILVER":
+		return SILVER
+	case "GOLD":
+		return GOLD
 	}
 
-	levelNames := make([]string, len(levels))
-	for i, level := range levels {
-		levelNames[i] = string(level.LevelName)
-	}
-
-	return levelNames, nil
+	return UNKNOWN
 }
