@@ -12,35 +12,49 @@ import (
 )
 
 type User struct {
-	gorm.Model
-	Username string `json:"username" gorm:"unique" binding:"required"`
-	Password string `json:"-" binding:"required"`
-	Email    string `json:"email" gorm:"unique" binding:"required"`
+	ID        uint      `json:"id" gorm:"primary_key"`
+	Username  string    `json:"username" gorm:"unique" binding:"required"`
+	Password  string    `json:"-" binding:"required"`
+	Email     string    `json:"email" gorm:"unique" binding:"required"`
+	Level     LevelName `json:"level" binding:"required"`
+	CreatedAt time.Time `json:"created_at" binding:"required"`
+	UpdatedAt time.Time `json:"updated_at" binding:"required"`
+	DeletedAt gorm.DeletedAt
 }
 
 func (user *User) Register(db *gorm.DB) error {
 	var dbUser User
-	db.Where("username = ? OR email = ?", user.Username, user.Email).First(&dbUser)
-	if dbUser.ID != 0 {
+
+	err := db.Where(&User{Username: user.Username}).Or(&User{Email: user.Email}).First(&dbUser).Error
+	if err == nil {
 		return errors.New("username or email already exists")
+	}
+
+	if !errors.Is(err, gorm.ErrRecordNotFound) {
+		return err
 	}
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
 	if err != nil {
 		return err
 	}
+	dbUser.Password = string(hashedPassword)
 
-	user.Password = string(hashedPassword)
-	return db.Create(&user).Error
+	dbUser.Level = BRONZE
+	dbUser.Username = user.Username
+	dbUser.Email = user.Email
+
+	return db.Create(&dbUser).Error
+
 }
 
 func (user *User) Authenticate(db *gorm.DB, password string) bool {
-	db.Where("username = ?", user.Username).First(&user)
-	if user.ID == 0 {
+	err := db.Where(&User{Username: user.Username}).First(&user).Error
+	if err != nil {
 		return false
 	}
 
-	err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
+	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
 	return err == nil
 }
 
@@ -70,4 +84,38 @@ func (user *User) GenerateToken(db *gorm.DB) (string, error) {
 	}
 
 	return tokenString, nil
+}
+
+func (user *User) AssignLevel(db *gorm.DB, levelName string) error {
+	var dbUser User
+	err := db.Where(&User{ID: user.ID}).First(&dbUser).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return errors.New("user not found")
+		}
+		return err
+	}
+
+	var level *Level
+	err = db.Where(&Level{}).First(&level).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return errors.New("level not found")
+		}
+		return err
+	}
+
+	userLevel := UserLevel{
+		UserID:  user.ID,
+		LevelID: level.ID,
+	}
+	ul, err := userLevel.Get(db)
+	if err != nil {
+		return err
+	}
+	if ul.ID != 0 {
+		return errors.New("level is already assigned")
+	}
+
+	return ul.Save(db)
 }

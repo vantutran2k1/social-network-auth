@@ -12,9 +12,9 @@ func SetupRouter() *gin.Engine {
 	router.POST("/api/auth/register", controllers.Register)
 	router.POST("/api/auth/login", controllers.Login)
 	router.POST("/api/auth/logout", middlewares.AuthMiddleware(), controllers.Logout)
-	router.POST("/api/auth/validate", middlewares.AuthMiddleware(), controllers.Validate)
 
 	router.GET("/api/levels", controllers.GetLevels)
+	router.POST("/api/levels/assign", controllers.AssignLevelToUser)
 
 	return router
 }

@@ -68,20 +68,11 @@ func Login(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"data": tokenString})
 }
 
-func Validate(c *gin.Context) {
-	tokenString := c.Request.Header.Get("Authorization")
-	token := models.Token{}
-	if !token.Validate(config.DB, tokenString) {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid or expired token"})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"message": "token is valid"})
-}
-
 func Logout(c *gin.Context) {
 	tokenString := c.Request.Header.Get("Authorization")
-	token := models.Token{}
+	tokenString = utils.GetTokenFromString(tokenString)
+
+	var token models.Token
 	err := token.Revoke(config.DB, tokenString)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})

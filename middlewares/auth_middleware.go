@@ -17,20 +17,20 @@ func AuthMiddleware() gin.HandlerFunc {
 			return
 		}
 
+		tokenString = utils.GetTokenFromString(tokenString)
+
 		claims := &utils.Claims{}
 		token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
 			return utils.JwtKey, nil
 		})
-
 		if err != nil || !token.Valid {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "invalid token"})
 			return
 		}
 
 		var dbToken models.Token
-		config.DB.Where("token = ?", tokenString).First(&dbToken)
-		if dbToken.Token == "" {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "token not found"})
+		if !dbToken.Validate(config.DB, tokenString) {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "token not found or expired"})
 			return
 		}
 
