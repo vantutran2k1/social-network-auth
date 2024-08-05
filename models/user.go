@@ -17,8 +17,8 @@ type User struct {
 	Password  string    `json:"-" binding:"required"`
 	Email     string    `json:"email" gorm:"unique" binding:"required"`
 	Level     Level     `json:"level" binding:"required"`
-	CreatedAt time.Time `json:"created_at" binding:"required"`
-	UpdatedAt time.Time `json:"updated_at" binding:"required"`
+	CreatedAt time.Time `json:"created_at" gorm:"autoCreateTime:false" binding:"required"`
+	UpdatedAt time.Time `json:"updated_at" gorm:"autoUpdateTime:false" binding:"required"`
 	DeletedAt gorm.DeletedAt
 }
 
@@ -44,8 +44,10 @@ func (user *User) Register(db *gorm.DB) error {
 	dbUser.Username = user.Username
 	dbUser.Email = user.Email
 
-	return db.Create(&dbUser).Error
+	dbUser.CreatedAt = time.Now().UTC()
+	dbUser.UpdatedAt = time.Now().UTC()
 
+	return db.Create(&dbUser).Error
 }
 
 func (user *User) Authenticate(db *gorm.DB, password string) bool {
@@ -101,6 +103,8 @@ func (user *User) AssignLevel(db *gorm.DB, levelName string) error {
 		return nil
 	}
 	dbUser.Level = level
+
+	dbUser.UpdatedAt = time.Now().UTC()
 
 	return db.Save(dbUser).Error
 }
