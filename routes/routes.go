@@ -15,5 +15,7 @@ func SetupRouter() *gin.Engine {
 
 	router.POST("/api/levels/assign", controllers.AssignLevelToUser)
 
+	router.POST("/api/profiles", controllers.CreateProfile)
+
 	return router
 }

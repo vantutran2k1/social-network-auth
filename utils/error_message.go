@@ -9,7 +9,7 @@ import (
 )
 
 type ErrorMessage struct {
-	Field   string `json:"field"`
+	Field   string `json:"field,omitempty"`
 	Message string `json:"message"`
 }
 
@@ -23,7 +23,7 @@ func BindAndValidate(c *gin.Context, obj any) []ErrorMessage {
 	ok := errors.As(err, &ve)
 	if !ok {
 		return []ErrorMessage{
-			{Field: "error", Message: err.Error()},
+			{Message: err.Error()},
 		}
 	}
 
@@ -69,6 +69,12 @@ func getErrorMsg(fe validator.FieldError) string {
 		return "Should be a valid email address"
 	case "oneof":
 		return "Should be one of " + strings.Join(strings.Split(fe.Param(), " "), ", ")
+	case "date":
+		return "Should be a valid date with format YYYY-MM-DD"
+	case "beforeToday":
+		return "Should be a valid date before today"
+	case "phoneNumber":
+		return "Should be a valid phone number"
 	}
 	return "Unknown error"
 }

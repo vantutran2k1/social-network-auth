@@ -13,12 +13,12 @@ import (
 
 type User struct {
 	ID        uint      `json:"id" gorm:"primary_key"`
-	Username  string    `json:"username" gorm:"unique" binding:"required"`
-	Password  string    `json:"-" binding:"required"`
-	Email     string    `json:"email" gorm:"unique" binding:"required"`
-	Level     Level     `json:"level" binding:"required"`
-	CreatedAt time.Time `json:"created_at" gorm:"autoCreateTime:false" binding:"required"`
-	UpdatedAt time.Time `json:"updated_at" gorm:"autoUpdateTime:false" binding:"required"`
+	Username  string    `json:"username" gorm:"unique;not null"`
+	Password  string    `json:"-" gorm:"not null"`
+	Email     string    `json:"email" gorm:"unique;not null"`
+	Level     Level     `json:"level" gorm:"not null"`
+	CreatedAt time.Time `json:"created_at" gorm:"not null;autoCreateTime:false"`
+	UpdatedAt time.Time `json:"updated_at" gorm:"not null;autoUpdateTime:false"`
 	DeletedAt gorm.DeletedAt
 }
 

@@ -4,6 +4,7 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/vantutran2k1/social-network-auth/config"
 	"github.com/vantutran2k1/social-network-auth/routes"
+	"github.com/vantutran2k1/social-network-auth/validators"
 	"log"
 	"os"
 )
@@ -14,13 +15,12 @@ func main() {
 		log.Fatal("Error loading .env file")
 	}
 
+	validators.RegisterCustomValidators()
+
 	config.InitDB()
 
-	appPort := os.Getenv("APP_PORT")
-
 	router := routes.SetupRouter()
-
-	err = router.Run(":" + appPort)
+	err = router.Run(":" + os.Getenv("APP_PORT"))
 	if err != nil {
 		log.Fatal(err)
 		return
