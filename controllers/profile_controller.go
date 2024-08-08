@@ -66,6 +66,22 @@ func GetProfile(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"data": getProfileResponse(profile)})
 }
 
+func GetCurrentProfile(c *gin.Context) {
+	userID, exist := c.Get("user_id")
+	if !exist {
+		c.JSON(http.StatusOK, gin.H{"data": make(map[string]any)})
+	}
+
+	p := models.Profile{UserID: userID.(uint)}
+	profile, err := p.GetProfileByUser(config.DB)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": getProfileResponse(profile)})
+}
+
 func getProfileResponse(p *models.Profile) map[string]any {
 	return map[string]any{
 		"user_id":       p.UserID,
