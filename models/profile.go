@@ -55,3 +55,16 @@ func (p *Profile) CreateProfile(db *gorm.DB) (*Profile, error) {
 
 	return &profile, nil
 }
+
+func (p *Profile) GetProfileByUser(db *gorm.DB) (*Profile, error) {
+	var dbProfile Profile
+	err := db.Where(&Profile{UserID: p.UserID}).First(&dbProfile).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, fmt.Errorf("profile for user %v not found", p.UserID)
+		}
+		return nil, err
+	}
+
+	return &dbProfile, nil
+}

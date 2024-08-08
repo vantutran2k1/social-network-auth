@@ -6,6 +6,7 @@ import (
 	"github.com/vantutran2k1/social-network-auth/models"
 	"github.com/vantutran2k1/social-network-auth/utils"
 	"net/http"
+	"strconv"
 )
 
 type CreateProfileRequest struct {
@@ -25,7 +26,7 @@ func CreateProfile(c *gin.Context) {
 		return
 	}
 
-	profile := models.Profile{
+	p := models.Profile{
 		UserID:      request.UserID,
 		FirstName:   request.FirstName,
 		LastName:    request.LastName,
@@ -33,13 +34,40 @@ func CreateProfile(c *gin.Context) {
 		Address:     request.Address,
 		Phone:       request.Phone,
 	}
-	p, err := profile.CreateProfile(config.DB)
+	profile, err := p.CreateProfile(config.DB)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	data := map[string]any{
+	c.JSON(http.StatusOK, gin.H{"data": getProfileResponse(profile)})
+}
+
+func GetProfile(c *gin.Context) {
+	userIDStr := c.Query("user_id")
+	if userIDStr == "" {
+		c.JSON(http.StatusOK, gin.H{"data": make(map[string]any)})
+		return
+	}
+
+	userID, err := strconv.Atoi(userIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "user_id must be integer"})
+		return
+	}
+
+	p := models.Profile{UserID: uint(userID)}
+	profile, err := p.GetProfileByUser(config.DB)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": getProfileResponse(profile)})
+}
+
+func getProfileResponse(p *models.Profile) map[string]any {
+	return map[string]any{
 		"user_id":       p.UserID,
 		"first_name":    p.FirstName,
 		"last_name":     p.LastName,
@@ -47,5 +75,4 @@ func CreateProfile(c *gin.Context) {
 		"address":       p.Address,
 		"phone":         p.Phone,
 	}
-	c.JSON(http.StatusOK, gin.H{"data": data})
 }
