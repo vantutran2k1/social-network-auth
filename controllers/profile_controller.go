@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"encoding/json"
 	"github.com/gin-gonic/gin"
 	"github.com/vantutran2k1/social-network-auth/config"
 	"github.com/vantutran2k1/social-network-auth/models"
@@ -18,6 +19,16 @@ type CreateProfileRequest struct {
 	Phone       string `json:"phone" binding:"required,phoneNumber"`
 }
 
+type ProfileResponse struct {
+	ID          uint   `json:"id,omitempty"`
+	UserID      uint   `json:"user_id,omitempty"`
+	FirstName   string `json:"first_name,omitempty"`
+	LastName    string `json:"last_name,omitempty"`
+	DateOfBirth string `json:"date_of_birth,omitempty"`
+	Address     string `json:"address,omitempty"`
+	Phone       string `json:"phone,omitempty"`
+}
+
 func CreateProfile(c *gin.Context) {
 	var request CreateProfileRequest
 	errs := utils.BindAndValidate(c, &request)
@@ -27,7 +38,6 @@ func CreateProfile(c *gin.Context) {
 	}
 
 	p := models.Profile{
-		UserID:      request.UserID,
 		FirstName:   request.FirstName,
 		LastName:    request.LastName,
 		DateOfBirth: request.DateOfBirth,
@@ -40,7 +50,14 @@ func CreateProfile(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"data": getProfileResponse(profile)})
+	r := ProfileResponse{
+		FirstName:   profile.FirstName,
+		LastName:    profile.LastName,
+		DateOfBirth: profile.DateOfBirth,
+		Address:     profile.Address,
+		Phone:       profile.Phone,
+	}
+	c.JSON(http.StatusCreated, gin.H{"data": getProfileResponseData(r)})
 }
 
 func GetProfile(c *gin.Context) {
@@ -63,7 +80,14 @@ func GetProfile(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"data": getProfileResponse(profile)})
+	r := ProfileResponse{
+		FirstName:   profile.FirstName,
+		LastName:    profile.LastName,
+		DateOfBirth: profile.DateOfBirth,
+		Address:     profile.Address,
+		Phone:       profile.Phone,
+	}
+	c.JSON(http.StatusOK, gin.H{"data": getProfileResponseData(r)})
 }
 
 func GetCurrentProfile(c *gin.Context) {
@@ -79,16 +103,27 @@ func GetCurrentProfile(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"data": getProfileResponse(profile)})
+	r := ProfileResponse{
+		FirstName:   profile.FirstName,
+		LastName:    profile.LastName,
+		DateOfBirth: profile.DateOfBirth,
+		Address:     profile.Address,
+		Phone:       profile.Phone,
+	}
+	c.JSON(http.StatusOK, gin.H{"data": getProfileResponseData(r)})
 }
 
-func getProfileResponse(p *models.Profile) map[string]any {
-	return map[string]any{
-		"user_id":       p.UserID,
-		"first_name":    p.FirstName,
-		"last_name":     p.LastName,
-		"date_of_birth": p.DateOfBirth,
-		"address":       p.Address,
-		"phone":         p.Phone,
+func getProfileResponseData(r ProfileResponse) map[string]any {
+	data, err := json.Marshal(r)
+	if err != nil {
+		return nil
 	}
+
+	var result map[string]any
+	err = json.Unmarshal(data, &result)
+	if err != nil {
+		return nil
+	}
+
+	return result
 }
