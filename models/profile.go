@@ -68,3 +68,24 @@ func (p *Profile) GetProfileByUser(db *gorm.DB) (*Profile, error) {
 
 	return &dbProfile, nil
 }
+
+func (p *Profile) UpdateProfileByUser(db *gorm.DB) (*Profile, error) {
+	var profile Profile
+	err := db.Where(&Profile{UserID: p.UserID}).First(&profile).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, fmt.Errorf("profile for user %v not found", p.UserID)
+		}
+		return nil, err
+	}
+
+	p.ID = profile.ID
+	p.UpdatedAt = time.Now().UTC()
+
+	err = db.Updates(&p).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return p, nil
+}

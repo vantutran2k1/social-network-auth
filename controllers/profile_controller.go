@@ -19,6 +19,14 @@ type CreateProfileRequest struct {
 	Phone       string `json:"phone" binding:"required,phoneNumber"`
 }
 
+type UpdateProfileRequest struct {
+	FirstName   string `json:"first_name" binding:"required,max=32"`
+	LastName    string `json:"last_name" binding:"required,max=32"`
+	DateOfBirth string `json:"date_of_birth" binding:"required,date,beforeToday"`
+	Address     string `json:"address" binding:"required,max=255"`
+	Phone       string `json:"phone" binding:"required,phoneNumber"`
+}
+
 type ProfileResponse struct {
 	ID          uint   `json:"id,omitempty"`
 	UserID      uint   `json:"user_id,omitempty"`
@@ -98,6 +106,43 @@ func GetCurrentProfile(c *gin.Context) {
 
 	p := models.Profile{UserID: userID.(uint)}
 	profile, err := p.GetProfileByUser(config.DB)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	r := ProfileResponse{
+		FirstName:   profile.FirstName,
+		LastName:    profile.LastName,
+		DateOfBirth: profile.DateOfBirth,
+		Address:     profile.Address,
+		Phone:       profile.Phone,
+	}
+	c.JSON(http.StatusOK, gin.H{"data": getProfileResponseData(r)})
+}
+
+func UpdateCurrentProfile(c *gin.Context) {
+	userID, exist := c.Get("user_id")
+	if !exist {
+		c.JSON(http.StatusOK, gin.H{"data": make(map[string]any)})
+	}
+
+	var request UpdateProfileRequest
+	errs := utils.BindAndValidate(c, &request)
+	if errs != nil && len(errs) > 0 {
+		c.JSON(http.StatusBadRequest, errs)
+		return
+	}
+
+	p := models.Profile{
+		UserID:      userID.(uint),
+		FirstName:   request.FirstName,
+		LastName:    request.LastName,
+		DateOfBirth: request.DateOfBirth,
+		Address:     request.Address,
+		Phone:       request.Phone,
+	}
+	profile, err := p.UpdateProfileByUser(config.DB)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
