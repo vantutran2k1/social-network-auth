@@ -101,7 +101,7 @@ func GetProfile(c *gin.Context) {
 func GetCurrentProfile(c *gin.Context) {
 	userID, exist := c.Get("user_id")
 	if !exist {
-		c.JSON(http.StatusOK, gin.H{"data": make(map[string]any)})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": make(map[string]any)})
 	}
 
 	p := models.Profile{UserID: userID.(uint)}
@@ -124,7 +124,7 @@ func GetCurrentProfile(c *gin.Context) {
 func UpdateCurrentProfile(c *gin.Context) {
 	userID, exist := c.Get("user_id")
 	if !exist {
-		c.JSON(http.StatusOK, gin.H{"data": make(map[string]any)})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": make(map[string]any)})
 	}
 
 	var request UpdateProfileRequest

@@ -2,13 +2,14 @@ package models
 
 import (
 	"errors"
+	"os"
+	"strconv"
+	"time"
+
 	"github.com/dgrijalva/jwt-go"
 	"github.com/vantutran2k1/social-network-auth/utils"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
-	"os"
-	"strconv"
-	"time"
 )
 
 type User struct {
@@ -107,4 +108,34 @@ func (user *User) AssignLevel(db *gorm.DB, levelName string) error {
 	dbUser.UpdatedAt = time.Now().UTC()
 
 	return db.Save(dbUser).Error
+}
+
+func (user *User) UpdatePassword(db *gorm.DB, currentPassword string, newPassword string) error {
+	err := db.Where(&User{ID: user.ID}).First(&user).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return errors.New("user not found")
+		}
+
+		return err
+	}
+
+	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(currentPassword))
+	if err != nil {
+		return errors.New("invalid password")
+	}
+
+	if currentPassword == newPassword {
+		return errors.New("new password can not be the same as current one")
+	}
+
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
+	if err != nil {
+		return err
+	}
+	user.Password = string(hashedPassword)
+
+	user.UpdatedAt = time.Now().UTC()
+
+	return db.Save(user).Error
 }
