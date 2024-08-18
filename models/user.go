@@ -75,6 +75,9 @@ func (user *User) GenerateToken(db *gorm.DB) (string, error) {
 	}
 	tokenJwt := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	tokenString, err := tokenJwt.SignedString(utils.JwtKey)
+	if err != nil {
+		return "", err
+	}
 
 	token := Token{
 		UserID:    user.ID,
