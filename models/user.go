@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
+	"github.com/vantutran2k1/social-network-auth/transaction"
 	"github.com/vantutran2k1/social-network-auth/utils"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
@@ -111,8 +112,7 @@ func (user *User) AssignLevel(db *gorm.DB, levelName string) error {
 }
 
 func (user *User) UpdatePassword(db *gorm.DB, currentPassword string, newPassword string) error {
-	err := db.Where(&User{ID: user.ID}).First(&user).Error
-	if err != nil {
+	if err := db.Where(&User{ID: user.ID}).First(&user).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return errors.New("user not found")
 		}
@@ -120,8 +120,7 @@ func (user *User) UpdatePassword(db *gorm.DB, currentPassword string, newPasswor
 		return err
 	}
 
-	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(currentPassword))
-	if err != nil {
+	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(currentPassword)); err != nil {
 		return errors.New("invalid password")
 	}
 
@@ -134,8 +133,16 @@ func (user *User) UpdatePassword(db *gorm.DB, currentPassword string, newPasswor
 		return err
 	}
 	user.Password = string(hashedPassword)
-
 	user.UpdatedAt = time.Now().UTC()
 
-	return db.Save(user).Error
+	err = transaction.TxManager.WithTransaction(func(tx *gorm.DB) error {
+		token := &Token{}
+		if err := token.RevokeUserActiveTokens(db, user.ID); err != nil {
+			return err
+		}
+
+		return db.Save(user).Error
+	})
+
+	return err
 }

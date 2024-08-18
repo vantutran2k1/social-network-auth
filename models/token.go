@@ -1,8 +1,9 @@
 package models
 
 import (
-	"gorm.io/gorm"
 	"time"
+
+	"gorm.io/gorm"
 )
 
 type Token struct {
@@ -37,6 +38,35 @@ func (token *Token) Revoke(db *gorm.DB, tokenString string) error {
 	dbToken.ExpiresAt = time.Now().UTC()
 
 	return db.Save(&dbToken).Error
+}
+
+func (token *Token) RevokeUserActiveTokens(db *gorm.DB, userID uint) error {
+	activeTokens, err := token.getActiveTokensByUser(db, userID)
+	if err != nil {
+		return err
+	}
+
+	for _, t := range activeTokens {
+		t.ExpiresAt = time.Now().UTC()
+	}
+
+	return db.Save(activeTokens).Error
+}
+
+func (token *Token) getActiveTokensByUser(db *gorm.DB, userID uint) ([]*Token, error) {
+	var tokens []*Token
+	if err := db.Where(&Token{UserID: userID}).Find(&tokens).Error; err != nil {
+		return nil, err
+	}
+
+	activeTokens := make([]*Token, 0, len(tokens))
+	for _, t := range tokens {
+		if !t.isExpired() {
+			activeTokens = append(activeTokens, t)
+		}
+	}
+
+	return activeTokens, nil
 }
 
 func (token *Token) isExpired() bool {

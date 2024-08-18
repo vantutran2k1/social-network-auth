@@ -1,12 +1,14 @@
 package main
 
 import (
+	"log"
+	"os"
+
 	"github.com/joho/godotenv"
 	"github.com/vantutran2k1/social-network-auth/config"
 	"github.com/vantutran2k1/social-network-auth/routes"
+	"github.com/vantutran2k1/social-network-auth/transaction"
 	"github.com/vantutran2k1/social-network-auth/validators"
-	"log"
-	"os"
 )
 
 func main() {
@@ -18,6 +20,7 @@ func main() {
 	validators.RegisterCustomValidators()
 
 	config.InitDB()
+	transaction.InitTransactionManager(config.DB)
 
 	router := routes.SetupRouter()
 	err = router.Run(":" + os.Getenv("APP_PORT"))
