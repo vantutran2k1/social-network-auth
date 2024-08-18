@@ -7,6 +7,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/vantutran2k1/social-network-auth/config"
+	"github.com/vantutran2k1/social-network-auth/middlewares"
 	"github.com/vantutran2k1/social-network-auth/models"
 	"github.com/vantutran2k1/social-network-auth/utils"
 )
@@ -40,21 +41,21 @@ type ProfileResponse struct {
 func CreateProfile(c *gin.Context) {
 	var request CreateProfileRequest
 	errs := utils.BindAndValidate(c, &request)
-	if errs != nil && len(errs) > 0 {
+	if len(errs) > 0 {
 		c.JSON(http.StatusBadRequest, errs)
 		return
 	}
 
-	userID, exist := c.Get("user_id")
-	if !exist {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "can not get user id from request"})
+	userID, err := middlewares.GetUserIDFromRequest(c)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	p := &models.Profile{}
+	p := models.Profile{}
 	profile, err := p.CreateProfile(
 		config.DB,
-		userID.(uint),
+		userID,
 		request.FirstName,
 		request.LastName,
 		request.DateOfBirth,
@@ -79,7 +80,7 @@ func CreateProfile(c *gin.Context) {
 func GetProfile(c *gin.Context) {
 	userIDStr := c.Query("user_id")
 	if userIDStr == "" {
-		c.JSON(http.StatusOK, gin.H{"data": make(map[string]any)})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "user_id is required"})
 		return
 	}
 
@@ -89,8 +90,8 @@ func GetProfile(c *gin.Context) {
 		return
 	}
 
-	p := models.Profile{UserID: uint(userID)}
-	profile, err := p.GetProfileByUser(config.DB)
+	p := models.Profile{}
+	profile, err := p.GetProfileByUser(config.DB, uint(userID))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -107,14 +108,14 @@ func GetProfile(c *gin.Context) {
 }
 
 func GetCurrentProfile(c *gin.Context) {
-	userID, exist := c.Get("user_id")
-	if !exist {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": make(map[string]any)})
+	userID, err := middlewares.GetUserIDFromRequest(c)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	p := models.Profile{UserID: userID.(uint)}
-	profile, err := p.GetProfileByUser(config.DB)
+	p := models.Profile{}
+	profile, err := p.GetProfileByUser(config.DB, userID)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -131,38 +132,31 @@ func GetCurrentProfile(c *gin.Context) {
 }
 
 func UpdateCurrentProfile(c *gin.Context) {
-	userID, exist := c.Get("user_id")
-	if !exist {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": make(map[string]any)})
-	}
-
 	var request UpdateProfileRequest
 	errs := utils.BindAndValidate(c, &request)
-	if errs != nil && len(errs) > 0 {
+	if len(errs) > 0 {
 		c.JSON(http.StatusBadRequest, errs)
 		return
 	}
 
-	p := models.Profile{
-		UserID:      userID.(uint),
-		FirstName:   request.FirstName,
-		LastName:    request.LastName,
-		DateOfBirth: request.DateOfBirth,
-		Address:     request.Address,
-		Phone:       request.Phone,
-	}
-	profile, err := p.UpdateProfileByUser(config.DB)
+	userID, err := middlewares.GetUserIDFromRequest(c)
 	if err != nil {
+		c.JSON(http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	p := models.Profile{}
+	if err := p.UpdateProfileByUser(config.DB, userID, request.FirstName, request.LastName, request.DateOfBirth, request.Address, request.Phone); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
 	r := ProfileResponse{
-		FirstName:   profile.FirstName,
-		LastName:    profile.LastName,
-		DateOfBirth: profile.DateOfBirth,
-		Address:     profile.Address,
-		Phone:       profile.Phone,
+		FirstName:   p.FirstName,
+		LastName:    p.LastName,
+		DateOfBirth: p.DateOfBirth,
+		Address:     p.Address,
+		Phone:       p.Phone,
 	}
 	c.JSON(http.StatusOK, gin.H{"data": getProfileResponseData(r)})
 }

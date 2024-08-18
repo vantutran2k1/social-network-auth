@@ -1,12 +1,14 @@
 package middlewares
 
 import (
+	"errors"
+	"net/http"
+
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
 	"github.com/vantutran2k1/social-network-auth/config"
 	"github.com/vantutran2k1/social-network-auth/models"
 	"github.com/vantutran2k1/social-network-auth/utils"
-	"net/http"
 )
 
 func AuthMiddleware() gin.HandlerFunc {
@@ -37,4 +39,13 @@ func AuthMiddleware() gin.HandlerFunc {
 		c.Set("user_id", claims.UserID)
 		c.Next()
 	}
+}
+
+func GetUserIDFromRequest(c *gin.Context) (uint, error) {
+	userID, exist := c.Get("user_id")
+	if !exist {
+		return 0, errors.New("can not get user id from request")
+	}
+
+	return userID.(uint), nil
 }

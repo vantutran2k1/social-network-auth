@@ -18,7 +18,7 @@ type PasswordResetToken struct {
 	CreatedAt   time.Time `gorm:"not null,autoCreateTime:false"`
 }
 
-func (t *PasswordResetToken) CreateResetToken(db *gorm.DB) (*PasswordResetToken, error) {
+func (t *PasswordResetToken) CreateResetToken(db *gorm.DB, userID uint) (*PasswordResetToken, error) {
 	token, err := generateResetToken()
 	if err != nil {
 		return nil, err
@@ -29,7 +29,7 @@ func (t *PasswordResetToken) CreateResetToken(db *gorm.DB) (*PasswordResetToken,
 		return nil, err
 	}
 	resetToken := &PasswordResetToken{
-		UserID:      t.UserID,
+		UserID:      userID,
 		Token:       token,
 		TokenExpiry: time.Now().UTC().Add(time.Duration(expirationAfter) * time.Minute),
 		CreatedAt:   time.Now().UTC(),

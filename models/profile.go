@@ -64,12 +64,12 @@ func (p *Profile) CreateProfile(
 	return &profile, nil
 }
 
-func (p *Profile) GetProfileByUser(db *gorm.DB) (*Profile, error) {
+func (p *Profile) GetProfileByUser(db *gorm.DB, userID uint) (*Profile, error) {
 	var dbProfile Profile
-	err := db.Where(&Profile{UserID: p.UserID}).First(&dbProfile).Error
+	err := db.Where(&Profile{UserID: userID}).First(&dbProfile).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, fmt.Errorf("profile for user %v not found", p.UserID)
+			return nil, fmt.Errorf("profile for user %v not found", userID)
 		}
 		return nil, err
 	}
@@ -77,23 +77,34 @@ func (p *Profile) GetProfileByUser(db *gorm.DB) (*Profile, error) {
 	return &dbProfile, nil
 }
 
-func (p *Profile) UpdateProfileByUser(db *gorm.DB) (*Profile, error) {
-	var profile Profile
-	err := db.Where(&Profile{UserID: p.UserID}).First(&profile).Error
+func (p *Profile) UpdateProfileByUser(
+	db *gorm.DB,
+	userID uint,
+	firstName string,
+	lastName string,
+	dateOfBirth string,
+	address string,
+	phone string,
+) error {
+	err := db.Where(&Profile{UserID: userID}).First(&p).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, fmt.Errorf("profile for user %v not found", p.UserID)
+			return fmt.Errorf("profile for user %v not found", userID)
 		}
-		return nil, err
+		return err
 	}
 
-	p.ID = profile.ID
+	p.FirstName = firstName
+	p.LastName = lastName
+	p.DateOfBirth = dateOfBirth
+	p.Address = address
+	p.Phone = phone
 	p.UpdatedAt = time.Now().UTC()
 
 	err = db.Updates(&p).Error
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return p, nil
+	return nil
 }
