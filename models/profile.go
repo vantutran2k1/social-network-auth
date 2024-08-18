@@ -3,8 +3,9 @@ package models
 import (
 	"errors"
 	"fmt"
-	"gorm.io/gorm"
 	"time"
+
+	"gorm.io/gorm"
 )
 
 type Profile struct {
@@ -20,11 +21,18 @@ type Profile struct {
 	DeletedAt   gorm.DeletedAt
 }
 
-func (p *Profile) CreateProfile(db *gorm.DB) (*Profile, error) {
-	userID := p.UserID
+func (p *Profile) CreateProfile(
+	db *gorm.DB,
+	userID uint,
+	firstName string,
+	lastName string,
+	dateOfBirth string,
+	address string,
+	phone string,
+) (*Profile, error) {
 	err := db.Where(&Profile{UserID: userID}).First(&Profile{}).Error
 	if err == nil {
-		return nil, fmt.Errorf("profile for user %v already exists", userID)
+		return nil, errors.New("profile for current user already exists")
 	}
 	if !errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, err
@@ -40,11 +48,11 @@ func (p *Profile) CreateProfile(db *gorm.DB) (*Profile, error) {
 
 	profile := Profile{
 		UserID:      userID,
-		FirstName:   p.FirstName,
-		LastName:    p.LastName,
-		DateOfBirth: p.DateOfBirth,
-		Address:     p.Address,
-		Phone:       p.Phone,
+		FirstName:   firstName,
+		LastName:    lastName,
+		DateOfBirth: dateOfBirth,
+		Address:     address,
+		Phone:       phone,
 		CreatedAt:   time.Now().UTC(),
 		UpdatedAt:   time.Now().UTC(),
 	}

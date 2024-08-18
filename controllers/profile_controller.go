@@ -2,16 +2,16 @@ package controllers
 
 import (
 	"encoding/json"
+	"net/http"
+	"strconv"
+
 	"github.com/gin-gonic/gin"
 	"github.com/vantutran2k1/social-network-auth/config"
 	"github.com/vantutran2k1/social-network-auth/models"
 	"github.com/vantutran2k1/social-network-auth/utils"
-	"net/http"
-	"strconv"
 )
 
 type CreateProfileRequest struct {
-	UserID      uint   `json:"user_id" binding:"required"`
 	FirstName   string `json:"first_name" binding:"required,max=32"`
 	LastName    string `json:"last_name" binding:"required,max=32"`
 	DateOfBirth string `json:"date_of_birth" binding:"required,date,beforeToday"`
@@ -45,14 +45,22 @@ func CreateProfile(c *gin.Context) {
 		return
 	}
 
-	p := models.Profile{
-		FirstName:   request.FirstName,
-		LastName:    request.LastName,
-		DateOfBirth: request.DateOfBirth,
-		Address:     request.Address,
-		Phone:       request.Phone,
+	userID, exist := c.Get("user_id")
+	if !exist {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "can not get user id from request"})
+		return
 	}
-	profile, err := p.CreateProfile(config.DB)
+
+	p := &models.Profile{}
+	profile, err := p.CreateProfile(
+		config.DB,
+		userID.(uint),
+		request.FirstName,
+		request.LastName,
+		request.DateOfBirth,
+		request.Address,
+		request.Phone,
+	)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -102,6 +110,7 @@ func GetCurrentProfile(c *gin.Context) {
 	userID, exist := c.Get("user_id")
 	if !exist {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": make(map[string]any)})
+		return
 	}
 
 	p := models.Profile{UserID: userID.(uint)}
