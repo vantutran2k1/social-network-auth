@@ -69,9 +69,9 @@ func (user *User) Authenticate(db *gorm.DB, username string, password string) (*
 	return &dbUser, nil
 }
 
-func (user *User) AssignLevel(db *gorm.DB, levelName string) error {
+func (user *User) AssignLevel(db *gorm.DB, userID uint, levelName string) error {
 	var dbUser User
-	err := db.Where(&User{ID: user.ID}).First(&dbUser).Error
+	err := db.Where(&User{ID: userID}).First(&dbUser).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return errors.New("user not found")

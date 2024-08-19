@@ -3,6 +3,7 @@ package middlewares
 import (
 	"errors"
 	"net/http"
+	"strings"
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
@@ -13,13 +14,11 @@ import (
 
 func AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		tokenString := c.GetHeader("Authorization")
+		tokenString := GetAuthTokenFromRequest(c)
 		if tokenString == "" {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "authorization header required"})
 			return
 		}
-
-		tokenString = utils.GetTokenFromString(tokenString)
 
 		claims := &utils.Claims{}
 		token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
@@ -48,4 +47,14 @@ func GetUserIDFromRequest(c *gin.Context) (uint, error) {
 	}
 
 	return userID.(uint), nil
+}
+
+func GetAuthTokenFromRequest(c *gin.Context) string {
+	token := c.Request.Header.Get("Authorization")
+	tokenParts := strings.Split(token, " ")
+	if len(tokenParts) == 2 {
+		token = tokenParts[1]
+	}
+
+	return token
 }

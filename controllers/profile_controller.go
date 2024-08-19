@@ -42,13 +42,13 @@ func CreateProfile(c *gin.Context) {
 	var request CreateProfileRequest
 	errs := utils.BindAndValidate(c, &request)
 	if len(errs) > 0 {
-		c.JSON(http.StatusBadRequest, errs)
+		c.JSON(http.StatusBadRequest, gin.H{"errors": errs})
 		return
 	}
 
 	userID, err := middlewares.GetUserIDFromRequest(c)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, err.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -110,7 +110,7 @@ func GetProfile(c *gin.Context) {
 func GetCurrentProfile(c *gin.Context) {
 	userID, err := middlewares.GetUserIDFromRequest(c)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, err.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -135,13 +135,13 @@ func UpdateCurrentProfile(c *gin.Context) {
 	var request UpdateProfileRequest
 	errs := utils.BindAndValidate(c, &request)
 	if len(errs) > 0 {
-		c.JSON(http.StatusBadRequest, errs)
+		c.JSON(http.StatusBadRequest, gin.H{"errors": errs})
 		return
 	}
 
 	userID, err := middlewares.GetUserIDFromRequest(c)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, err.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 

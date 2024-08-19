@@ -5,6 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/vantutran2k1/social-network-auth/config"
+	"github.com/vantutran2k1/social-network-auth/middlewares"
 	"github.com/vantutran2k1/social-network-auth/models"
 	"github.com/vantutran2k1/social-network-auth/utils"
 )
@@ -73,11 +74,8 @@ func Login(c *gin.Context) {
 }
 
 func Logout(c *gin.Context) {
-	tokenString := c.Request.Header.Get("Authorization")
-	tokenString = utils.GetTokenFromString(tokenString)
-
 	var token models.Token
-	err := token.Revoke(config.DB, tokenString)
+	err := token.Revoke(config.DB, middlewares.GetAuthTokenFromRequest(c))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -87,20 +85,21 @@ func Logout(c *gin.Context) {
 }
 
 func UpdatePassword(c *gin.Context) {
-	userID, exist := c.Get("user_id")
-	if !exist {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": make(map[string]any)})
+	userID, err := middlewares.GetUserIDFromRequest(c)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
 	}
 
 	var request UpdatePasswordRequest
 	errs := utils.BindAndValidate(c, &request)
-	if errs != nil && len(errs) > 0 {
-		c.JSON(http.StatusBadRequest, errs)
+	if len(errs) > 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"errors": errs})
 		return
 	}
 
-	u := models.User{ID: userID.(uint)}
-	err := u.UpdatePassword(config.DB, request.CurrentPassword, request.NewPassword)
+	u := models.User{ID: userID}
+	err = u.UpdatePassword(config.DB, request.CurrentPassword, request.NewPassword)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return

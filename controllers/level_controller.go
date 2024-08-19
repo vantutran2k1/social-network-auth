@@ -1,11 +1,12 @@
 package controllers
 
 import (
+	"net/http"
+
 	"github.com/gin-gonic/gin"
 	"github.com/vantutran2k1/social-network-auth/config"
 	"github.com/vantutran2k1/social-network-auth/models"
 	"github.com/vantutran2k1/social-network-auth/utils"
-	"net/http"
 )
 
 type AssignLevelRequest struct {
@@ -16,13 +17,13 @@ type AssignLevelRequest struct {
 func AssignLevelToUser(c *gin.Context) {
 	var request AssignLevelRequest
 	errs := utils.BindAndValidate(c, &request)
-	if errs != nil && len(errs) > 0 {
+	if len(errs) > 0 {
 		c.JSON(http.StatusBadRequest, gin.H{"errors": errs})
 		return
 	}
 
-	user := models.User{ID: request.UserId}
-	err := user.AssignLevel(config.DB, request.LevelName)
+	user := models.User{}
+	err := user.AssignLevel(config.DB, request.UserId, request.LevelName)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
