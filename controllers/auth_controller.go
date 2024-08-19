@@ -26,6 +26,11 @@ type UpdatePasswordRequest struct {
 	NewPassword     string `json:"new_password" binding:"required,min=8,max=32"`
 }
 
+type UpdateLevelRequest struct {
+	UserId    uint   `json:"user_id" binding:"required"`
+	LevelName string `json:"level_name" binding:"required,oneof=BRONZE SILVER GOLD"`
+}
+
 func Register(c *gin.Context) {
 	var creds UserRegistrationRequest
 	errs := utils.BindAndValidate(c, &creds)
@@ -106,4 +111,26 @@ func UpdatePassword(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "password updated successfully"})
+}
+
+func UpdateUserLevel(c *gin.Context) {
+	var request UpdateLevelRequest
+	errs := utils.BindAndValidate(c, &request)
+	if len(errs) > 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"errors": errs})
+		return
+	}
+
+	user := models.User{}
+	err := user.UpdateLevel(config.DB, request.UserId, request.LevelName)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	data := map[string]any{
+		"user_id": user.ID,
+		"level":   request.LevelName,
+	}
+	c.JSON(http.StatusOK, gin.H{"data": data})
 }

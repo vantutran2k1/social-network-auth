@@ -69,25 +69,24 @@ func (user *User) Authenticate(db *gorm.DB, username string, password string) (*
 	return &dbUser, nil
 }
 
-func (user *User) AssignLevel(db *gorm.DB, userID uint, levelName string) error {
-	var dbUser User
-	err := db.Where(&User{ID: userID}).First(&dbUser).Error
+func (user *User) UpdateLevel(db *gorm.DB, userID uint, levelName string) error {
+	err := db.Where(&User{ID: userID}).First(&user).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return errors.New("user not found")
+			return fmt.Errorf("user %v not found", userID)
 		}
 		return err
 	}
 
 	level := GetLevelFromName(levelName)
-	if dbUser.Level == level {
+	if user.Level == level {
 		return nil
 	}
-	dbUser.Level = level
+	user.Level = level
 
-	dbUser.UpdatedAt = time.Now().UTC()
+	user.UpdatedAt = time.Now().UTC()
 
-	return db.Save(dbUser).Error
+	return db.Save(user).Error
 }
 
 func (user *User) UpdatePassword(db *gorm.DB, currentPassword string, newPassword string) error {
