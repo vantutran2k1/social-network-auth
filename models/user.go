@@ -2,13 +2,10 @@ package models
 
 import (
 	"errors"
-	"os"
-	"strconv"
+	"fmt"
 	"time"
 
-	"github.com/dgrijalva/jwt-go"
 	"github.com/vantutran2k1/social-network-auth/transaction"
-	"github.com/vantutran2k1/social-network-auth/utils"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
@@ -24,10 +21,13 @@ type User struct {
 	DeletedAt gorm.DeletedAt
 }
 
-func (user *User) Register(db *gorm.DB) error {
-	var dbUser User
-
-	err := db.Where(&User{Username: user.Username}).Or(&User{Email: user.Email}).First(&dbUser).Error
+func (user *User) Register(
+	db *gorm.DB,
+	username string,
+	password string,
+	email string,
+) error {
+	err := db.Where(&User{Username: username}).Or(&User{Email: email}).First(&User{}).Error
 	if err == nil {
 		return errors.New("username or email already exists")
 	}
@@ -36,61 +36,37 @@ func (user *User) Register(db *gorm.DB) error {
 		return err
 	}
 
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		return err
 	}
-	dbUser.Password = string(hashedPassword)
+	user.Password = string(hashedPassword)
 
-	dbUser.Level = BRONZE
-	dbUser.Username = user.Username
-	dbUser.Email = user.Email
+	user.Level = BRONZE
+	user.Username = username
+	user.Email = email
 
-	dbUser.CreatedAt = time.Now().UTC()
-	dbUser.UpdatedAt = time.Now().UTC()
+	user.CreatedAt = time.Now().UTC()
+	user.UpdatedAt = time.Now().UTC()
 
-	return db.Create(&dbUser).Error
+	return db.Create(&user).Error
 }
 
-func (user *User) Authenticate(db *gorm.DB, password string) bool {
-	err := db.Where(&User{Username: user.Username}).First(&user).Error
-	if err != nil {
-		return false
+func (user *User) Authenticate(db *gorm.DB, username string, password string) (*User, error) {
+	var dbUser User
+	if err := db.Where(&User{Username: username}).First(&dbUser).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, fmt.Errorf("user %s not found", username)
+		}
+
+		return nil, err
 	}
 
-	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
-	return err == nil
-}
-
-func (user *User) GenerateToken(db *gorm.DB) (string, error) {
-	expirationAfter, err := strconv.Atoi(os.Getenv("JWT_EXPIRATION_MINUTES"))
-	if err != nil {
-		return "", err
+	if err := bcrypt.CompareHashAndPassword([]byte(dbUser.Password), []byte(password)); err != nil {
+		return nil, errors.New("invalid password")
 	}
 
-	expirationTime := time.Now().UTC().Add(time.Duration(expirationAfter) * time.Minute)
-	claims := &utils.Claims{
-		UserID:         user.ID,
-		StandardClaims: jwt.StandardClaims{ExpiresAt: expirationTime.Unix()},
-	}
-	tokenJwt := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	tokenString, err := tokenJwt.SignedString(utils.JwtKey)
-	if err != nil {
-		return "", err
-	}
-
-	token := Token{
-		UserID:    user.ID,
-		Token:     tokenString,
-		IssuedAt:  time.Now().UTC(),
-		ExpiresAt: expirationTime,
-	}
-	err = token.Save(db)
-	if err != nil {
-		return "", err
-	}
-
-	return tokenString, nil
+	return &dbUser, nil
 }
 
 func (user *User) AssignLevel(db *gorm.DB, levelName string) error {

@@ -28,17 +28,13 @@ type UpdatePasswordRequest struct {
 func Register(c *gin.Context) {
 	var creds UserRegistrationRequest
 	errs := utils.BindAndValidate(c, &creds)
-	if errs != nil && len(errs) > 0 {
+	if len(errs) > 0 {
 		c.JSON(http.StatusBadRequest, gin.H{"errors": errs})
 		return
 	}
 
-	user := models.User{
-		Username: creds.Username,
-		Password: creds.Password,
-		Email:    creds.Email,
-	}
-	err := user.Register(config.DB)
+	user := models.User{}
+	err := user.Register(config.DB, creds.Username, creds.Password, creds.Email)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -54,24 +50,26 @@ func Register(c *gin.Context) {
 func Login(c *gin.Context) {
 	var auth UserAuthenticationRequest
 	errs := utils.BindAndValidate(c, &auth)
-	if errs != nil && len(errs) > 0 {
+	if len(errs) > 0 {
 		c.JSON(http.StatusBadRequest, gin.H{"errors": errs})
 		return
 	}
 
-	user := models.User{Username: auth.Username}
-	if !user.Authenticate(config.DB, auth.Password) {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid username or password"})
+	user := models.User{}
+	loginUser, err := user.Authenticate(config.DB, auth.Username, auth.Password)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 		return
 	}
 
-	tokenString, err := user.GenerateToken(config.DB)
+	t := models.Token{}
+	token, err := t.CreateLoginToken(config.DB, loginUser.ID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"data": tokenString})
+	c.JSON(http.StatusOK, gin.H{"data": token.Token})
 }
 
 func Logout(c *gin.Context) {

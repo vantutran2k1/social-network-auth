@@ -1,8 +1,12 @@
 package models
 
 import (
+	"os"
+	"strconv"
 	"time"
 
+	"github.com/dgrijalva/jwt-go"
+	"github.com/vantutran2k1/social-network-auth/utils"
 	"gorm.io/gorm"
 )
 
@@ -14,8 +18,34 @@ type Token struct {
 	ExpiresAt time.Time `json:"expires_at" gorm:"not null"`
 }
 
-func (token *Token) Save(db *gorm.DB) error {
-	return db.Create(token).Error
+func (token *Token) CreateLoginToken(db *gorm.DB, userID uint) (*Token, error) {
+	expirationAfter, err := strconv.Atoi(os.Getenv("JWT_EXPIRATION_MINUTES"))
+	if err != nil {
+		return nil, err
+	}
+
+	expirationTime := time.Now().UTC().Add(time.Duration(expirationAfter) * time.Minute)
+	claims := &utils.Claims{
+		UserID:         userID,
+		StandardClaims: jwt.StandardClaims{ExpiresAt: expirationTime.Unix()},
+	}
+	tokenJwt := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	tokenString, err := tokenJwt.SignedString(utils.JwtKey)
+	if err != nil {
+		return nil, err
+	}
+
+	t := Token{
+		UserID:    userID,
+		Token:     tokenString,
+		IssuedAt:  time.Now().UTC(),
+		ExpiresAt: expirationTime,
+	}
+	if err := db.Create(&t).Error; err != nil {
+		return nil, err
+	}
+
+	return &t, nil
 }
 
 func (token *Token) Validate(db *gorm.DB, tokenString string) bool {
