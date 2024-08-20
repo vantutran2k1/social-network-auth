@@ -8,7 +8,7 @@ import (
 	"github.com/vantutran2k1/social-network-auth/config"
 	"github.com/vantutran2k1/social-network-auth/middlewares"
 	"github.com/vantutran2k1/social-network-auth/models"
-	"github.com/vantutran2k1/social-network-auth/utils"
+	"github.com/vantutran2k1/social-network-auth/validators"
 )
 
 type UserRegistrationRequest struct {
@@ -34,7 +34,7 @@ type UpdateLevelRequest struct {
 
 func Register(c *gin.Context) {
 	var creds UserRegistrationRequest
-	errs := utils.BindAndValidate(c, &creds)
+	errs := validators.BindAndValidate(c, &creds)
 	if len(errs) > 0 {
 		c.JSON(http.StatusBadRequest, gin.H{"errors": errs})
 		return
@@ -56,7 +56,7 @@ func Register(c *gin.Context) {
 
 func Login(c *gin.Context) {
 	var auth UserAuthenticationRequest
-	errs := utils.BindAndValidate(c, &auth)
+	errs := validators.BindAndValidate(c, &auth)
 	if len(errs) > 0 {
 		c.JSON(http.StatusBadRequest, gin.H{"errors": errs})
 		return
@@ -98,7 +98,7 @@ func UpdatePassword(c *gin.Context) {
 	}
 
 	var request UpdatePasswordRequest
-	errs := utils.BindAndValidate(c, &request)
+	errs := validators.BindAndValidate(c, &request)
 	if len(errs) > 0 {
 		c.JSON(http.StatusBadRequest, gin.H{"errors": errs})
 		return
@@ -116,7 +116,7 @@ func UpdatePassword(c *gin.Context) {
 
 func UpdateUserLevel(c *gin.Context) {
 	var request UpdateLevelRequest
-	errs := utils.BindAndValidate(c, &request)
+	errs := validators.BindAndValidate(c, &request)
 	if len(errs) > 0 {
 		c.JSON(http.StatusBadRequest, gin.H{"errors": errs})
 		return

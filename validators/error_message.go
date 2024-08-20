@@ -1,11 +1,12 @@
-package utils
+package validators
 
 import (
 	"errors"
-	"github.com/gin-gonic/gin"
-	"github.com/go-playground/validator/v10"
 	"reflect"
 	"strings"
+
+	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
 )
 
 type ErrorMessage struct {

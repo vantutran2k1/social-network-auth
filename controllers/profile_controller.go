@@ -9,7 +9,7 @@ import (
 	"github.com/vantutran2k1/social-network-auth/config"
 	"github.com/vantutran2k1/social-network-auth/middlewares"
 	"github.com/vantutran2k1/social-network-auth/models"
-	"github.com/vantutran2k1/social-network-auth/utils"
+	"github.com/vantutran2k1/social-network-auth/validators"
 )
 
 type CreateProfileRequest struct {
@@ -40,7 +40,7 @@ type ProfileResponse struct {
 
 func CreateProfile(c *gin.Context) {
 	var request CreateProfileRequest
-	errs := utils.BindAndValidate(c, &request)
+	errs := validators.BindAndValidate(c, &request)
 	if len(errs) > 0 {
 		c.JSON(http.StatusBadRequest, gin.H{"errors": errs})
 		return
@@ -133,7 +133,7 @@ func GetCurrentProfile(c *gin.Context) {
 
 func UpdateCurrentProfile(c *gin.Context) {
 	var request UpdateProfileRequest
-	errs := utils.BindAndValidate(c, &request)
+	errs := validators.BindAndValidate(c, &request)
 	if len(errs) > 0 {
 		c.JSON(http.StatusBadRequest, gin.H{"errors": errs})
 		return
