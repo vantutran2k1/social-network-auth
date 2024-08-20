@@ -4,11 +4,12 @@ import (
 	"os"
 
 	"github.com/dgrijalva/jwt-go"
+	"github.com/google/uuid"
 )
 
 var JwtKey = []byte(os.Getenv("JWT_KEY"))
 
 type Claims struct {
-	UserID uint `json:"user_id"`
+	UserID uuid.UUID `json:"user_id"`
 	jwt.StandardClaims
 }

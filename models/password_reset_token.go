@@ -7,18 +7,19 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
 type PasswordResetToken struct {
-	ID          uint      `gorm:"primary_key"`
-	UserID      uint      `gorm:"not null"`
+	ID          uuid.UUID `gorm:"primary_key"`
+	UserID      uuid.UUID `gorm:"not null"`
 	Token       string    `gorm:"not null"`
 	TokenExpiry time.Time `gorm:"not null"`
 	CreatedAt   time.Time `gorm:"not null,autoCreateTime:false"`
 }
 
-func (t *PasswordResetToken) CreateResetToken(db *gorm.DB, userID uint) (*PasswordResetToken, error) {
+func (t *PasswordResetToken) CreateResetToken(db *gorm.DB, userID uuid.UUID) (*PasswordResetToken, error) {
 	token, err := generateResetToken()
 	if err != nil {
 		return nil, err
@@ -29,6 +30,7 @@ func (t *PasswordResetToken) CreateResetToken(db *gorm.DB, userID uint) (*Passwo
 		return nil, err
 	}
 	resetToken := &PasswordResetToken{
+		ID:          uuid.New(),
 		UserID:      userID,
 		Token:       token,
 		TokenExpiry: time.Now().UTC().Add(time.Duration(expirationAfter) * time.Minute),

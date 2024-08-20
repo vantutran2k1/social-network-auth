@@ -6,19 +6,20 @@ import (
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
+	"github.com/google/uuid"
 	"github.com/vantutran2k1/social-network-auth/utils"
 	"gorm.io/gorm"
 )
 
 type Token struct {
-	ID        uint      `gorm:"primarykey"`
-	UserID    uint      `json:"user_id" gorm:"not null"`
+	ID        uuid.UUID `gorm:"primarykey"`
+	UserID    uuid.UUID `json:"user_id" gorm:"not null"`
 	Token     string    `json:"token" gorm:"not null"`
 	IssuedAt  time.Time `json:"issued_at" gorm:"not null"`
 	ExpiresAt time.Time `json:"expires_at" gorm:"not null"`
 }
 
-func (token *Token) CreateLoginToken(db *gorm.DB, userID uint) (*Token, error) {
+func (token *Token) CreateLoginToken(db *gorm.DB, userID uuid.UUID) (*Token, error) {
 	expirationAfter, err := strconv.Atoi(os.Getenv("JWT_EXPIRATION_MINUTES"))
 	if err != nil {
 		return nil, err
@@ -36,6 +37,7 @@ func (token *Token) CreateLoginToken(db *gorm.DB, userID uint) (*Token, error) {
 	}
 
 	t := Token{
+		ID:        uuid.New(),
 		UserID:    userID,
 		Token:     tokenString,
 		IssuedAt:  time.Now().UTC(),
@@ -70,7 +72,7 @@ func (token *Token) Revoke(db *gorm.DB, tokenString string) error {
 	return db.Save(&dbToken).Error
 }
 
-func (token *Token) RevokeUserActiveTokens(db *gorm.DB, userID uint) error {
+func (token *Token) RevokeUserActiveTokens(db *gorm.DB, userID uuid.UUID) error {
 	activeTokens, err := token.getActiveTokensByUser(db, userID)
 	if err != nil {
 		return err
@@ -83,7 +85,7 @@ func (token *Token) RevokeUserActiveTokens(db *gorm.DB, userID uint) error {
 	return db.Save(activeTokens).Error
 }
 
-func (token *Token) getActiveTokensByUser(db *gorm.DB, userID uint) ([]*Token, error) {
+func (token *Token) getActiveTokensByUser(db *gorm.DB, userID uuid.UUID) ([]*Token, error) {
 	var tokens []*Token
 	if err := db.Where(&Token{UserID: userID}).Find(&tokens).Error; err != nil {
 		return nil, err

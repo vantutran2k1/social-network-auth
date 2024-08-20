@@ -5,12 +5,13 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
 type Profile struct {
-	ID          uint      `json:"id" gorm:"primary_key"`
-	UserID      uint      `json:"user_id" gorm:"unique,not null"`
+	ID          uuid.UUID `json:"id" gorm:"primary_key"`
+	UserID      uuid.UUID `json:"user_id" gorm:"unique,not null"`
 	FirstName   string    `json:"first_name" gorm:"not null"`
 	LastName    string    `json:"last_name" gorm:"not null"`
 	DateOfBirth string    `json:"date_of_birth" gorm:"not null"`
@@ -23,7 +24,7 @@ type Profile struct {
 
 func (p *Profile) CreateProfile(
 	db *gorm.DB,
-	userID uint,
+	userID uuid.UUID,
 	firstName string,
 	lastName string,
 	dateOfBirth string,
@@ -47,6 +48,7 @@ func (p *Profile) CreateProfile(
 	}
 
 	profile := Profile{
+		ID:          uuid.New(),
 		UserID:      userID,
 		FirstName:   firstName,
 		LastName:    lastName,
@@ -64,7 +66,7 @@ func (p *Profile) CreateProfile(
 	return &profile, nil
 }
 
-func (p *Profile) GetProfileByUser(db *gorm.DB, userID uint) (*Profile, error) {
+func (p *Profile) GetProfileByUser(db *gorm.DB, userID uuid.UUID) (*Profile, error) {
 	var dbProfile Profile
 	err := db.Where(&Profile{UserID: userID}).First(&dbProfile).Error
 	if err != nil {
@@ -79,7 +81,7 @@ func (p *Profile) GetProfileByUser(db *gorm.DB, userID uint) (*Profile, error) {
 
 func (p *Profile) UpdateProfileByUser(
 	db *gorm.DB,
-	userID uint,
+	userID uuid.UUID,
 	firstName string,
 	lastName string,
 	dateOfBirth string,

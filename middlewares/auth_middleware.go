@@ -7,6 +7,7 @@ import (
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/vantutran2k1/social-network-auth/config"
 	"github.com/vantutran2k1/social-network-auth/models"
 	"github.com/vantutran2k1/social-network-auth/utils"
@@ -40,13 +41,13 @@ func AuthMiddleware() gin.HandlerFunc {
 	}
 }
 
-func GetUserIDFromRequest(c *gin.Context) (uint, error) {
+func GetUserIDFromRequest(c *gin.Context) (uuid.UUID, error) {
 	userID, exist := c.Get("user_id")
 	if !exist {
-		return 0, errors.New("can not get user id from request")
+		return uuid.Nil, errors.New("can not get user id from request")
 	}
 
-	return userID.(uint), nil
+	return userID.(uuid.UUID), nil
 }
 
 func GetAuthTokenFromRequest(c *gin.Context) string {

@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/vantutran2k1/social-network-auth/config"
 	"github.com/vantutran2k1/social-network-auth/middlewares"
 	"github.com/vantutran2k1/social-network-auth/models"
@@ -27,8 +28,8 @@ type UpdatePasswordRequest struct {
 }
 
 type UpdateLevelRequest struct {
-	UserId    uint   `json:"user_id" binding:"required"`
-	LevelName string `json:"level_name" binding:"required,oneof=BRONZE SILVER GOLD"`
+	UserId    uuid.UUID `json:"user_id" binding:"required"`
+	LevelName string    `json:"level_name" binding:"required,oneof=BRONZE SILVER GOLD"`
 }
 
 func Register(c *gin.Context) {

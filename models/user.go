@@ -5,13 +5,14 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/vantutran2k1/social-network-auth/transaction"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
 
 type User struct {
-	ID        uint      `json:"id" gorm:"primary_key"`
+	ID        uuid.UUID `json:"id" gorm:"primary_key"`
 	Username  string    `json:"username" gorm:"unique;not null"`
 	Password  string    `json:"-" gorm:"not null"`
 	Email     string    `json:"email" gorm:"unique;not null"`
@@ -42,6 +43,7 @@ func (user *User) Register(
 	}
 	user.Password = string(hashedPassword)
 
+	user.ID = uuid.New()
 	user.Level = BRONZE
 	user.Username = username
 	user.Email = email
@@ -69,7 +71,7 @@ func (user *User) Authenticate(db *gorm.DB, username string, password string) (*
 	return &dbUser, nil
 }
 
-func (user *User) UpdateLevel(db *gorm.DB, userID uint, levelName string) error {
+func (user *User) UpdateLevel(db *gorm.DB, userID uuid.UUID, levelName string) error {
 	err := db.Where(&User{ID: userID}).First(&user).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {

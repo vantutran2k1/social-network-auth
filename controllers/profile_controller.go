@@ -3,9 +3,9 @@ package controllers
 import (
 	"encoding/json"
 	"net/http"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/vantutran2k1/social-network-auth/config"
 	"github.com/vantutran2k1/social-network-auth/middlewares"
 	"github.com/vantutran2k1/social-network-auth/models"
@@ -84,14 +84,14 @@ func GetProfile(c *gin.Context) {
 		return
 	}
 
-	userID, err := strconv.Atoi(userIDStr)
+	userID, err := uuid.Parse(userIDStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "user_id must be integer"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid syntax for user_id"})
 		return
 	}
 
 	p := models.Profile{}
-	profile, err := p.GetProfileByUser(config.DB, uint(userID))
+	profile, err := p.GetProfileByUser(config.DB, userID)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
