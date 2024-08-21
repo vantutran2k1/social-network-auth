@@ -36,6 +36,12 @@ type CreateResetPasswordTokenRequest struct {
 	UserIdentity string `json:"user_identity" binding:"required"`
 }
 
+type ResetPasswordRequest struct {
+	Email           string `json:"email" binding:"required,email"`
+	NewPassword     string `json:"new_password" binding:"required,min=8,max=32"`
+	ConfirmPassword string `json:"confirm_password" binding:"required,min=8,max=32"`
+}
+
 func Register(c *gin.Context) {
 	var creds UserRegistrationRequest
 	errs := validators.BindAndValidate(c, &creds)
@@ -167,4 +173,27 @@ func CreateResetPasswordToken(c *gin.Context) {
 		"token_expiry": token.TokenExpiry,
 	}
 	c.JSON(http.StatusOK, gin.H{"data": data})
+}
+
+func ResetPassword(c *gin.Context) {
+	resetToken := c.Query("reset_token")
+	if resetToken == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "reset_token is required"})
+		return
+	}
+
+	var request ResetPasswordRequest
+	errs := validators.BindAndValidate(c, &request)
+	if len(errs) > 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"errors": errs})
+		return
+	}
+
+	var u models.User
+	if err := u.ResetPassword(config.DB, request.Email, resetToken, request.NewPassword, request.ConfirmPassword); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": "password updated successfully"})
 }

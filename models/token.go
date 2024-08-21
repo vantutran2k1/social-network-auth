@@ -78,6 +78,10 @@ func (token *Token) RevokeUserActiveTokens(db *gorm.DB, userID uuid.UUID) error 
 		return err
 	}
 
+	if len(activeTokens) == 0 {
+		return nil
+	}
+
 	for _, t := range activeTokens {
 		t.ExpiresAt = time.Now().UTC()
 	}

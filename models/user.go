@@ -109,7 +109,49 @@ func (user *User) UpdatePassword(db *gorm.DB, currentPassword string, newPasswor
 		return errors.New("new password can not be the same as current one")
 	}
 
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
+	return user.updatePassword(db, newPassword)
+}
+
+func (user *User) ResetPassword(db *gorm.DB, email string, resetToken string, newPassword string, confirmPassword string) error {
+	if newPassword != confirmPassword {
+		return errors.New("comfirm password does not match with new password")
+	}
+
+	var u User
+	if err := db.Where(&User{Email: email}).First(&u).Error; err != nil {
+		if utils.IsRecordNotFound(err) {
+			return fmt.Errorf("can not find user with email %v", email)
+		}
+
+		return err
+	}
+
+	if err := db.Where("token = ? AND token_expiry > ? AND user_id = ?", resetToken, time.Now().UTC(), u.ID).First(&PasswordResetToken{}).Error; err != nil {
+		if utils.IsRecordNotFound(err) {
+			return errors.New("invalid or expired token")
+		}
+
+		return err
+	}
+
+	return u.updatePassword(db, newPassword)
+}
+
+func (user *User) GetUserByUsernameOrEmail(db *gorm.DB, userIdentity string) (*User, error) {
+	var dbUser User
+	if err := db.Where(&User{Username: userIdentity}).Or(&User{Email: userIdentity}).First(&dbUser).Error; err != nil {
+		if utils.IsRecordNotFound(err) {
+			return nil, errors.New("user not found")
+		}
+
+		return nil, err
+	}
+
+	return &dbUser, nil
+}
+
+func (user *User) updatePassword(db *gorm.DB, password string) error {
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		return err
 	}
@@ -126,17 +168,4 @@ func (user *User) UpdatePassword(db *gorm.DB, currentPassword string, newPasswor
 	})
 
 	return err
-}
-
-func (user *User) GetUserByUsernameOrEmail(db *gorm.DB, userIdentity string) (*User, error) {
-	var dbUser User
-	if err := db.Where(&User{Username: userIdentity}).Or(&User{Email: userIdentity}).First(&dbUser).Error; err != nil {
-		if utils.IsRecordNotFound(err) {
-			return nil, errors.New("user not found")
-		}
-
-		return nil, err
-	}
-
-	return &dbUser, nil
 }
