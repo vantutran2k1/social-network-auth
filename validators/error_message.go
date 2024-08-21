@@ -1,7 +1,9 @@
 package validators
 
 import (
+	"encoding/json"
 	"errors"
+	"fmt"
 	"reflect"
 	"strings"
 
@@ -20,23 +22,38 @@ func BindAndValidate(c *gin.Context, obj any) []ErrorMessage {
 		return nil
 	}
 
+	var errorMessages []ErrorMessage
+
+	if unmarshalErrors, ok := err.(*json.UnmarshalTypeError); ok {
+		errorMessages = append(errorMessages, ErrorMessage{
+			Field:   unmarshalErrors.Field,
+			Message: fmt.Sprintf("invalid data type: expected '%v' but got '%v'", unmarshalErrors.Type, unmarshalErrors.Value),
+		})
+	}
+
+	if syntaxError, ok := err.(*json.SyntaxError); ok {
+		errorMessages = append(errorMessages, ErrorMessage{
+			Message: fmt.Sprintf("syntax error: %v", syntaxError.Error()),
+		})
+	}
+
 	var ve validator.ValidationErrors
-	ok := errors.As(err, &ve)
-	if !ok {
-		return []ErrorMessage{
-			{Message: err.Error()},
+	if errors.As(err, &ve) {
+		for _, fe := range ve {
+			errorMessages = append(errorMessages, ErrorMessage{
+				Field:   getFieldName(fe, obj),
+				Message: getErrorMsg(fe),
+			})
 		}
 	}
 
-	bindErrs := make([]ErrorMessage, len(ve))
-	for i, fe := range ve {
-		bindErrs[i] = ErrorMessage{
-			Field:   getFieldName(fe, obj),
-			Message: getErrorMsg(fe),
-		}
+	if len(errorMessages) == 0 {
+		errorMessages = append(errorMessages, ErrorMessage{
+			Message: err.Error(),
+		})
 	}
 
-	return bindErrs
+	return errorMessages
 }
 
 func getFieldName(fe validator.FieldError, obj any) string {
@@ -77,5 +94,5 @@ func getErrorMsg(fe validator.FieldError) string {
 	case "phoneNumber":
 		return "Should be a valid phone number"
 	}
-	return "Unknown error"
+	return fe.Error()
 }
