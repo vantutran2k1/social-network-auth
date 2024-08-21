@@ -7,6 +7,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/vantutran2k1/social-network-auth/transaction"
+	"github.com/vantutran2k1/social-network-auth/utils"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
@@ -33,7 +34,7 @@ func (user *User) Register(
 		return errors.New("username or email already exists")
 	}
 
-	if !errors.Is(err, gorm.ErrRecordNotFound) {
+	if !utils.IsRecordNotFound(err) {
 		return err
 	}
 
@@ -57,7 +58,7 @@ func (user *User) Register(
 func (user *User) Authenticate(db *gorm.DB, username string, password string) (*User, error) {
 	var dbUser User
 	if err := db.Where(&User{Username: username}).First(&dbUser).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
+		if utils.IsRecordNotFound(err) {
 			return nil, fmt.Errorf("user %s not found", username)
 		}
 
@@ -74,7 +75,7 @@ func (user *User) Authenticate(db *gorm.DB, username string, password string) (*
 func (user *User) UpdateLevel(db *gorm.DB, userID uuid.UUID, levelName string) error {
 	err := db.Where(&User{ID: userID}).First(&user).Error
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
+		if utils.IsRecordNotFound(err) {
 			return fmt.Errorf("user %v not found", userID)
 		}
 		return err
@@ -93,7 +94,7 @@ func (user *User) UpdateLevel(db *gorm.DB, userID uuid.UUID, levelName string) e
 
 func (user *User) UpdatePassword(db *gorm.DB, currentPassword string, newPassword string) error {
 	if err := db.Where(&User{ID: user.ID}).First(&user).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
+		if utils.IsRecordNotFound(err) {
 			return errors.New("user not found")
 		}
 
@@ -125,4 +126,17 @@ func (user *User) UpdatePassword(db *gorm.DB, currentPassword string, newPasswor
 	})
 
 	return err
+}
+
+func (user *User) GetUserByUsernameOrEmail(db *gorm.DB, userIdentity string) (*User, error) {
+	var dbUser User
+	if err := db.Where(&User{Username: userIdentity}).Or(&User{Email: userIdentity}).First(&dbUser).Error; err != nil {
+		if utils.IsRecordNotFound(err) {
+			return nil, errors.New("user not found")
+		}
+
+		return nil, err
+	}
+
+	return &dbUser, nil
 }

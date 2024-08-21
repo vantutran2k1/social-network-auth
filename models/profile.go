@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/vantutran2k1/social-network-auth/utils"
 	"gorm.io/gorm"
 )
 
@@ -35,13 +36,13 @@ func (p *Profile) CreateProfile(
 	if err == nil {
 		return nil, errors.New("profile for current user already exists")
 	}
-	if !errors.Is(err, gorm.ErrRecordNotFound) {
+	if !utils.IsRecordNotFound(err) {
 		return nil, err
 	}
 
 	err = db.Where(&User{ID: userID}).First(&User{}).Error
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
+		if utils.IsRecordNotFound(err) {
 			return nil, fmt.Errorf("user %v not found", userID)
 		}
 		return nil, err
@@ -70,7 +71,7 @@ func (p *Profile) GetProfileByUser(db *gorm.DB, userID uuid.UUID) (*Profile, err
 	var dbProfile Profile
 	err := db.Where(&Profile{UserID: userID}).First(&dbProfile).Error
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
+		if utils.IsRecordNotFound(err) {
 			return nil, fmt.Errorf("profile for user %v not found", userID)
 		}
 		return nil, err
@@ -90,7 +91,7 @@ func (p *Profile) UpdateProfileByUser(
 ) error {
 	err := db.Where(&Profile{UserID: userID}).First(&p).Error
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
+		if utils.IsRecordNotFound(err) {
 			return fmt.Errorf("profile for user %v not found", userID)
 		}
 		return err

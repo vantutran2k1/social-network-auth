@@ -32,6 +32,10 @@ type UpdateLevelRequest struct {
 	LevelName string    `json:"level_name" binding:"required,oneof=BRONZE SILVER GOLD"`
 }
 
+type CreateResetPasswordTokenRequest struct {
+	UserIdentity string `json:"user_identity" binding:"required"`
+}
+
 func Register(c *gin.Context) {
 	var creds UserRegistrationRequest
 	errs := validators.BindAndValidate(c, &creds)
@@ -132,6 +136,35 @@ func UpdateUserLevel(c *gin.Context) {
 	data := map[string]any{
 		"user_id": user.ID,
 		"level":   request.LevelName,
+	}
+	c.JSON(http.StatusOK, gin.H{"data": data})
+}
+
+func CreateResetPasswordToken(c *gin.Context) {
+	var request CreateResetPasswordTokenRequest
+	errs := validators.BindAndValidate(c, &request)
+	if len(errs) > 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"errors": errs})
+		return
+	}
+
+	u := models.User{}
+	user, err := u.GetUserByUsernameOrEmail(config.DB, request.UserIdentity)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	t := models.PasswordResetToken{}
+	token, err := t.CreateResetToken(config.DB, user.ID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	data := map[string]any{
+		"token":        token.Token,
+		"token_expiry": token.TokenExpiry,
 	}
 	c.JSON(http.StatusOK, gin.H{"data": data})
 }

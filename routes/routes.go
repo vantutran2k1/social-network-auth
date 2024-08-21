@@ -12,6 +12,7 @@ func SetupRouter() *gin.Engine {
 	router.POST("/api/auth/register", controllers.Register)
 	router.POST("/api/auth/login", controllers.Login)
 	router.POST("/api/auth/logout", middlewares.AuthMiddleware(), controllers.Logout)
+	router.POST("/api/auth/create-reset-password-token", controllers.CreateResetPasswordToken)
 	router.PUT("/api/auth/password", middlewares.AuthMiddleware(), controllers.UpdatePassword)
 	router.PATCH("/api/auth/level", controllers.UpdateUserLevel)
 
