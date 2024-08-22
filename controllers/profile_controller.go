@@ -40,8 +40,7 @@ type ProfileResponse struct {
 
 func CreateProfile(c *gin.Context) {
 	var request CreateProfileRequest
-	errs := validators.BindAndValidate(c, &request)
-	if len(errs) > 0 {
+	if errs := validators.BindAndValidate(c, &request); len(errs) > 0 {
 		c.JSON(http.StatusBadRequest, gin.H{"errors": errs})
 		return
 	}
@@ -53,7 +52,7 @@ func CreateProfile(c *gin.Context) {
 	}
 
 	p := models.Profile{}
-	profile, err := p.CreateProfile(
+	profile, e := p.CreateProfile(
 		config.DB,
 		userID,
 		request.FirstName,
@@ -62,8 +61,8 @@ func CreateProfile(c *gin.Context) {
 		request.Address,
 		request.Phone,
 	)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	if e != nil {
+		c.JSON(e.Code, gin.H{"error": e.Error()})
 		return
 	}
 
@@ -91,9 +90,9 @@ func GetProfile(c *gin.Context) {
 	}
 
 	p := models.Profile{}
-	profile, err := p.GetProfileByUser(config.DB, userID)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	profile, e := p.GetProfileByUser(config.DB, userID)
+	if e != nil {
+		c.JSON(e.Code, gin.H{"error": e.Error()})
 		return
 	}
 
@@ -115,9 +114,9 @@ func GetCurrentProfile(c *gin.Context) {
 	}
 
 	p := models.Profile{}
-	profile, err := p.GetProfileByUser(config.DB, userID)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	profile, e := p.GetProfileByUser(config.DB, userID)
+	if e != nil {
+		c.JSON(e.Code, gin.H{"error": e.Error()})
 		return
 	}
 
@@ -133,8 +132,7 @@ func GetCurrentProfile(c *gin.Context) {
 
 func UpdateCurrentProfile(c *gin.Context) {
 	var request UpdateProfileRequest
-	errs := validators.BindAndValidate(c, &request)
-	if len(errs) > 0 {
+	if errs := validators.BindAndValidate(c, &request); len(errs) > 0 {
 		c.JSON(http.StatusBadRequest, gin.H{"errors": errs})
 		return
 	}
@@ -147,7 +145,7 @@ func UpdateCurrentProfile(c *gin.Context) {
 
 	p := models.Profile{}
 	if err := p.UpdateProfileByUser(config.DB, userID, request.FirstName, request.LastName, request.DateOfBirth, request.Address, request.Phone); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(err.Code, gin.H{"error": err.Error()})
 		return
 	}
 

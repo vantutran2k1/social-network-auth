@@ -44,16 +44,14 @@ type ResetPasswordRequest struct {
 
 func Register(c *gin.Context) {
 	var creds UserRegistrationRequest
-	errs := validators.BindAndValidate(c, &creds)
-	if len(errs) > 0 {
+	if errs := validators.BindAndValidate(c, &creds); len(errs) > 0 {
 		c.JSON(http.StatusBadRequest, gin.H{"errors": errs})
 		return
 	}
 
 	user := models.User{}
-	err := user.Register(config.DB, creds.Username, creds.Password, creds.Email)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	if err := user.Register(config.DB, creds.Username, creds.Password, creds.Email); err != nil {
+		c.JSON(err.Code, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -66,8 +64,7 @@ func Register(c *gin.Context) {
 
 func Login(c *gin.Context) {
 	var auth UserAuthenticationRequest
-	errs := validators.BindAndValidate(c, &auth)
-	if len(errs) > 0 {
+	if errs := validators.BindAndValidate(c, &auth); len(errs) > 0 {
 		c.JSON(http.StatusBadRequest, gin.H{"errors": errs})
 		return
 	}
@@ -75,7 +72,7 @@ func Login(c *gin.Context) {
 	user := models.User{}
 	loginUser, err := user.Authenticate(config.DB, auth.Username, auth.Password)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		c.JSON(err.Code, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -91,9 +88,8 @@ func Login(c *gin.Context) {
 
 func Logout(c *gin.Context) {
 	var token models.Token
-	err := token.Revoke(config.DB, middlewares.GetAuthTokenFromRequest(c))
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	if err := token.Revoke(config.DB, middlewares.GetAuthTokenFromRequest(c)); err != nil {
+		c.JSON(err.Code, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -108,16 +104,14 @@ func UpdatePassword(c *gin.Context) {
 	}
 
 	var request UpdatePasswordRequest
-	errs := validators.BindAndValidate(c, &request)
-	if len(errs) > 0 {
+	if errs := validators.BindAndValidate(c, &request); len(errs) > 0 {
 		c.JSON(http.StatusBadRequest, gin.H{"errors": errs})
 		return
 	}
 
 	u := models.User{ID: userID}
-	err = u.UpdatePassword(config.DB, request.CurrentPassword, request.NewPassword)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	if err := u.UpdatePassword(config.DB, request.CurrentPassword, request.NewPassword); err != nil {
+		c.JSON(err.Code, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -126,16 +120,14 @@ func UpdatePassword(c *gin.Context) {
 
 func UpdateUserLevel(c *gin.Context) {
 	var request UpdateLevelRequest
-	errs := validators.BindAndValidate(c, &request)
-	if len(errs) > 0 {
+	if errs := validators.BindAndValidate(c, &request); len(errs) > 0 {
 		c.JSON(http.StatusBadRequest, gin.H{"errors": errs})
 		return
 	}
 
 	user := models.User{}
-	err := user.UpdateLevel(config.DB, request.UserId, request.LevelName)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	if err := user.UpdateLevel(config.DB, request.UserId, request.LevelName); err != nil {
+		c.JSON(err.Code, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -148,8 +140,7 @@ func UpdateUserLevel(c *gin.Context) {
 
 func CreateResetPasswordToken(c *gin.Context) {
 	var request CreateResetPasswordTokenRequest
-	errs := validators.BindAndValidate(c, &request)
-	if len(errs) > 0 {
+	if errs := validators.BindAndValidate(c, &request); len(errs) > 0 {
 		c.JSON(http.StatusBadRequest, gin.H{"errors": errs})
 		return
 	}
@@ -157,14 +148,14 @@ func CreateResetPasswordToken(c *gin.Context) {
 	u := models.User{}
 	user, err := u.GetUserByUsernameOrEmail(config.DB, request.UserIdentity)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(err.Code, gin.H{"error": err.Error()})
 		return
 	}
 
 	t := models.PasswordResetToken{}
 	token, err := t.CreateResetToken(config.DB, user.ID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(err.Code, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -183,15 +174,14 @@ func ResetPassword(c *gin.Context) {
 	}
 
 	var request ResetPasswordRequest
-	errs := validators.BindAndValidate(c, &request)
-	if len(errs) > 0 {
+	if errs := validators.BindAndValidate(c, &request); len(errs) > 0 {
 		c.JSON(http.StatusBadRequest, gin.H{"errors": errs})
 		return
 	}
 
 	var u models.User
 	if err := u.ResetPassword(config.DB, request.Email, resetToken, request.NewPassword, request.ConfirmPassword); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(err.Code, gin.H{"error": err.Error()})
 		return
 	}
 

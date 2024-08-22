@@ -1,11 +1,10 @@
 package models
 
 import (
-	"errors"
-	"fmt"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/vantutran2k1/social-network-auth/errors"
 	"github.com/vantutran2k1/social-network-auth/transaction"
 	"github.com/vantutran2k1/social-network-auth/utils"
 	"golang.org/x/crypto/bcrypt"
@@ -28,19 +27,19 @@ func (user *User) Register(
 	username string,
 	password string,
 	email string,
-) error {
+) *errors.ApiError {
 	err := db.Where(&User{Username: username}).Or(&User{Email: email}).First(&User{}).Error
 	if err == nil {
-		return errors.New("username or email already exists")
+		return errors.BadRequestError("username or email already exists")
 	}
 
 	if !utils.IsRecordNotFound(err) {
-		return err
+		return errors.InternalServerError(err.Error())
 	}
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
-		return err
+		return errors.InternalServerError(err.Error())
 	}
 	user.Password = string(hashedPassword)
 
@@ -52,33 +51,38 @@ func (user *User) Register(
 	user.CreatedAt = time.Now().UTC()
 	user.UpdatedAt = time.Now().UTC()
 
-	return db.Create(&user).Error
+	if err := db.Create(&user).Error; err != nil {
+		return errors.InternalServerError(err.Error())
+	}
+
+	return nil
 }
 
-func (user *User) Authenticate(db *gorm.DB, username string, password string) (*User, error) {
+func (user *User) Authenticate(db *gorm.DB, username string, password string) (*User, *errors.ApiError) {
 	var dbUser User
 	if err := db.Where(&User{Username: username}).First(&dbUser).Error; err != nil {
 		if utils.IsRecordNotFound(err) {
-			return nil, fmt.Errorf("user %s not found", username)
+			return nil, errors.BadRequestError("user %s not found", username)
 		}
 
-		return nil, err
+		return nil, errors.InternalServerError(err.Error())
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(dbUser.Password), []byte(password)); err != nil {
-		return nil, errors.New("invalid password")
+		return nil, errors.BadRequestError("invalid password")
 	}
 
 	return &dbUser, nil
 }
 
-func (user *User) UpdateLevel(db *gorm.DB, userID uuid.UUID, levelName string) error {
+func (user *User) UpdateLevel(db *gorm.DB, userID uuid.UUID, levelName string) *errors.ApiError {
 	err := db.Where(&User{ID: userID}).First(&user).Error
 	if err != nil {
 		if utils.IsRecordNotFound(err) {
-			return fmt.Errorf("user %v not found", userID)
+			return errors.BadRequestError("user %v not found", userID)
 		}
-		return err
+
+		return errors.InternalServerError(err.Error())
 	}
 
 	level := GetLevelFromName(levelName)
@@ -89,62 +93,74 @@ func (user *User) UpdateLevel(db *gorm.DB, userID uuid.UUID, levelName string) e
 
 	user.UpdatedAt = time.Now().UTC()
 
-	return db.Save(user).Error
+	if err := db.Save(user).Error; err != nil {
+		return errors.InternalServerError(err.Error())
+	}
+
+	return nil
 }
 
-func (user *User) UpdatePassword(db *gorm.DB, currentPassword string, newPassword string) error {
+func (user *User) UpdatePassword(db *gorm.DB, currentPassword string, newPassword string) *errors.ApiError {
 	if err := db.Where(&User{ID: user.ID}).First(&user).Error; err != nil {
 		if utils.IsRecordNotFound(err) {
-			return errors.New("user not found")
+			return errors.BadRequestError("user not found")
 		}
 
-		return err
+		return errors.InternalServerError(err.Error())
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(currentPassword)); err != nil {
-		return errors.New("invalid password")
+		return errors.BadRequestError("invalid password")
 	}
 
 	if currentPassword == newPassword {
-		return errors.New("new password can not be the same as current one")
+		return errors.BadRequestError("new password can not be the same as current one")
 	}
 
-	return user.updatePassword(db, newPassword)
+	if err := user.updatePassword(db, newPassword); err != nil {
+		return errors.InternalServerError(err.Error())
+	}
+
+	return nil
 }
 
-func (user *User) ResetPassword(db *gorm.DB, email string, resetToken string, newPassword string, confirmPassword string) error {
+func (user *User) ResetPassword(db *gorm.DB, email string, resetToken string, newPassword string, confirmPassword string) *errors.ApiError {
 	if newPassword != confirmPassword {
-		return errors.New("comfirm password does not match with new password")
+		return errors.BadRequestError("comfirm password does not match with new password")
 	}
 
 	var u User
 	if err := db.Where(&User{Email: email}).First(&u).Error; err != nil {
 		if utils.IsRecordNotFound(err) {
-			return fmt.Errorf("can not find user with email %v", email)
+			return errors.BadRequestError("can not find user with email %v", email)
 		}
 
-		return err
+		return errors.InternalServerError(err.Error())
 	}
 
 	if err := db.Where("token = ? AND token_expiry > ? AND user_id = ?", resetToken, time.Now().UTC(), u.ID).First(&PasswordResetToken{}).Error; err != nil {
 		if utils.IsRecordNotFound(err) {
-			return errors.New("invalid or expired token")
+			return errors.BadRequestError("invalid or expired token")
 		}
 
-		return err
+		return errors.InternalServerError(err.Error())
 	}
 
-	return u.updatePassword(db, newPassword)
+	if err := u.updatePassword(db, newPassword); err != nil {
+		return errors.InternalServerError(err.Error())
+	}
+
+	return nil
 }
 
-func (user *User) GetUserByUsernameOrEmail(db *gorm.DB, userIdentity string) (*User, error) {
+func (user *User) GetUserByUsernameOrEmail(db *gorm.DB, userIdentity string) (*User, *errors.ApiError) {
 	var dbUser User
 	if err := db.Where(&User{Username: userIdentity}).Or(&User{Email: userIdentity}).First(&dbUser).Error; err != nil {
 		if utils.IsRecordNotFound(err) {
-			return nil, errors.New("user not found")
+			return nil, errors.BadRequestError("user not found")
 		}
 
-		return nil, err
+		return nil, errors.InternalServerError(err.Error())
 	}
 
 	return &dbUser, nil

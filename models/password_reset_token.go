@@ -8,6 +8,8 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/vantutran2k1/social-network-auth/errors"
+	"github.com/vantutran2k1/social-network-auth/utils"
 	"gorm.io/gorm"
 )
 
@@ -19,15 +21,23 @@ type PasswordResetToken struct {
 	CreatedAt   time.Time `gorm:"not null,autoCreateTime:false"`
 }
 
-func (t *PasswordResetToken) CreateResetToken(db *gorm.DB, userID uuid.UUID) (*PasswordResetToken, error) {
+func (t *PasswordResetToken) CreateResetToken(db *gorm.DB, userID uuid.UUID) (*PasswordResetToken, *errors.ApiError) {
+	if err := db.Where(&User{ID: userID}).First(&User{}).Error; err != nil {
+		if utils.IsRecordNotFound(err) {
+			return nil, errors.BadRequestError("user not found")
+		}
+
+		return nil, errors.InternalServerError(err.Error())
+	}
+
 	token, err := generateResetToken()
 	if err != nil {
-		return nil, err
+		return nil, errors.InternalServerError(err.Error())
 	}
 
 	expirationAfter, err := strconv.Atoi(os.Getenv("RESET_PASSWORD_TOKEN_EXPIRATION_MINUTES"))
 	if err != nil {
-		return nil, err
+		return nil, errors.InternalServerError(err.Error())
 	}
 	resetToken := &PasswordResetToken{
 		ID:          uuid.New(),
@@ -38,7 +48,7 @@ func (t *PasswordResetToken) CreateResetToken(db *gorm.DB, userID uuid.UUID) (*P
 	}
 
 	if err := db.Create(&resetToken).Error; err != nil {
-		return nil, err
+		return nil, errors.InternalServerError(err.Error())
 	}
 
 	return resetToken, nil

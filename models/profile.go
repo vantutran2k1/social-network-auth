@@ -1,11 +1,10 @@
 package models
 
 import (
-	"errors"
-	"fmt"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/vantutran2k1/social-network-auth/errors"
 	"github.com/vantutran2k1/social-network-auth/utils"
 	"gorm.io/gorm"
 )
@@ -31,21 +30,21 @@ func (p *Profile) CreateProfile(
 	dateOfBirth string,
 	address string,
 	phone string,
-) (*Profile, error) {
+) (*Profile, *errors.ApiError) {
 	err := db.Where(&Profile{UserID: userID}).First(&Profile{}).Error
 	if err == nil {
-		return nil, errors.New("profile for current user already exists")
+		return nil, errors.BadRequestError("profile for current user already exists")
 	}
 	if !utils.IsRecordNotFound(err) {
-		return nil, err
+		return nil, errors.InternalServerError(err.Error())
 	}
 
-	err = db.Where(&User{ID: userID}).First(&User{}).Error
-	if err != nil {
+	if err := db.Where(&User{ID: userID}).First(&User{}).Error; err != nil {
 		if utils.IsRecordNotFound(err) {
-			return nil, fmt.Errorf("user %v not found", userID)
+			return nil, errors.BadRequestError("user not found")
 		}
-		return nil, err
+
+		return nil, errors.InternalServerError(err.Error())
 	}
 
 	profile := Profile{
@@ -59,22 +58,22 @@ func (p *Profile) CreateProfile(
 		CreatedAt:   time.Now().UTC(),
 		UpdatedAt:   time.Now().UTC(),
 	}
-	err = db.Create(&profile).Error
-	if err != nil {
-		return nil, err
+	if err = db.Create(&profile).Error; err != nil {
+		return nil, errors.InternalServerError(err.Error())
 	}
 
 	return &profile, nil
 }
 
-func (p *Profile) GetProfileByUser(db *gorm.DB, userID uuid.UUID) (*Profile, error) {
+func (p *Profile) GetProfileByUser(db *gorm.DB, userID uuid.UUID) (*Profile, *errors.ApiError) {
 	var dbProfile Profile
 	err := db.Where(&Profile{UserID: userID}).First(&dbProfile).Error
 	if err != nil {
 		if utils.IsRecordNotFound(err) {
-			return nil, fmt.Errorf("profile for user %v not found", userID)
+			return nil, errors.BadRequestError("profile for user %v not found", userID)
 		}
-		return nil, err
+
+		return nil, errors.InternalServerError(err.Error())
 	}
 
 	return &dbProfile, nil
@@ -88,13 +87,14 @@ func (p *Profile) UpdateProfileByUser(
 	dateOfBirth string,
 	address string,
 	phone string,
-) error {
+) *errors.ApiError {
 	err := db.Where(&Profile{UserID: userID}).First(&p).Error
 	if err != nil {
 		if utils.IsRecordNotFound(err) {
-			return fmt.Errorf("profile for user %v not found", userID)
+			return errors.BadRequestError("profile for user %v not found", userID)
 		}
-		return err
+
+		return errors.InternalServerError(err.Error())
 	}
 
 	p.FirstName = firstName
@@ -106,7 +106,7 @@ func (p *Profile) UpdateProfileByUser(
 
 	err = db.Updates(&p).Error
 	if err != nil {
-		return err
+		return errors.InternalServerError(err.Error())
 	}
 
 	return nil
