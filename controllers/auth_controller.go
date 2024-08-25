@@ -42,6 +42,11 @@ type ResetPasswordRequest struct {
 	ConfirmPassword string `json:"confirm_password" binding:"required,min=8,max=32"`
 }
 
+type SendResetPasswordEmailRequest struct {
+	Email      string `json:"email" binding:"required,email"`
+	ResetToken string `json:"reset_token" binding:"required"`
+}
+
 func Register(c *gin.Context) {
 	var creds UserRegistrationRequest
 	if errs := validators.BindAndValidate(c, &creds); len(errs) > 0 {
@@ -186,4 +191,20 @@ func ResetPassword(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"data": "password updated successfully"})
+}
+
+func SendResetPasswordEmail(c *gin.Context) {
+	var request SendResetPasswordEmailRequest
+	if errs := validators.BindAndValidate(c, &request); len(errs) > 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"errors": errs})
+		return
+	}
+
+	user := models.User{}
+	if err := user.SendResetPasswordEmail(config.DB, request.Email, request.ResetToken); err != nil {
+		c.JSON(err.Code, err.Error())
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": "email sent successfully"})
 }

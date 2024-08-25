@@ -1,6 +1,10 @@
 package models
 
 import (
+	"bytes"
+	"os"
+	"path/filepath"
+	"text/template"
 	"time"
 
 	"github.com/google/uuid"
@@ -164,6 +168,43 @@ func (user *User) GetUserByUsernameOrEmail(db *gorm.DB, userIdentity string) (*U
 	}
 
 	return &dbUser, nil
+}
+
+func (user *User) SendResetPasswordEmail(db *gorm.DB, email string, resetToken string) *errors.ApiError {
+	body, err := parsePasswordResetTemplate(resetToken)
+	if err != nil {
+		return errors.InternalServerError(err.Error())
+	}
+
+	subject := "Password Reset Request"
+	return utils.SendEmail(email, subject, body)
+}
+
+func parsePasswordResetTemplate(resetToken string) (string, error) {
+	htmlFilePath := filepath.Join("email", "password_reset", "password_reset.html")
+	htmlContent, err := os.ReadFile(htmlFilePath)
+	if err != nil {
+		return "", err
+	}
+
+	cssFilePath := filepath.Join("email", "password_reset", "password_reset.css")
+	cssContent, err := os.ReadFile(cssFilePath)
+	if err != nil {
+		return "", err
+	}
+
+	htmlWithCSS := bytes.Replace(htmlContent, []byte(`<link rel="stylesheet" href="password_reset.css">`), []byte("<style>"+string(cssContent)+"</style>"), 1)
+	tmpl, err := template.New("passwordReset").Parse(string(htmlWithCSS))
+	if err != nil {
+		return "", err
+	}
+
+	var body bytes.Buffer
+	if err := tmpl.Execute(&body, struct{ ResetToken string }{ResetToken: resetToken}); err != nil {
+		return "", err
+	}
+
+	return body.String(), nil
 }
 
 func (user *User) updatePassword(db *gorm.DB, password string) error {
